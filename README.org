@@ -1,0 +1,76 @@
+Implementation of Flexible Conditional Density Estimator (FlexCode) in
+Python. See Izbicki, R.; Lee, A.B. [[https://projecteuclid.org/euclid.ejs/1499133755][Converting High-Dimensional
+Regression to High-Dimensional Conditional Density Estimation]].
+Electronic Journal of Statistics, 2017 for details. Port of the
+original [[https://github.com/rizbicki/FlexCoDE][R package]].
+
+* FlexCode
+  FlexCode is a general-purpose method for converting any conditional
+  mean point estimator of $z$ to a conditional {\em density} estimator
+  $f(z \vert x)$, where $x$ represents the covariates. The key idea is to
+  expand the unknown function $f(z \vert x)$ in an orthonormal basis
+  $\{\phi_i(z)\}_{i}$:
+
+  $$ f(z|x)=\sum_{i}\beta_{i }(x)\phi_i(z) $$
+
+  By the orthogonality property, the expansion coefficients are just
+  conditional means
+
+  $$ \beta_{i }(x) = \mathbb{E}\left[\phi_i(z)|x\right] \equiv \int f(z|x) \phi_i(z) dz $$
+
+  where the coefficients are estimated from data by an appropriate
+  regression method.
+
+* Installation
+  #+BEGIN_SRC shell
+  git clone https://github.com/tpospisi/Flexcode.git
+  pip install Flexcode[all]
+  #+END_SRC
+
+  Flexcode handles a number of regression models; if you wish to avoid
+  installing all dependencies you can specify your desired regression
+  methods using the optional requires in brackets. Targets include
+
+  + xgboost
+  + sklearn (for nearest neighbor regression, random forests)
+
+* A simple example
+  #+BEGIN_SRC python
+    import numpy as np
+    import scipy.stats
+    import flexcode
+    from flexcode.regression_models import NN
+    import matplotlib.pyplot as plt
+
+    # Generate data p(z | x) = N(x, 1)
+    def generate_data(n_draws):
+        x = np.random.normal(0, 1, n_draws)
+        z = np.random.normal(x, 1, n_draws)
+        return x.reshape((len(x), 1)), z
+
+    x_train, z_train = generate_data(10000)
+    x_validation, z_validation = generate_data(10000)
+    x_test, z_test = generate_data(10000)
+
+    # Parameterize model
+    model = flexcode.FlexCodeModel(NN, max_basis=31, basis_system="cosine",
+                                   regression_params={"k":20})
+
+    # Fit and tune model
+    model.fit(x_train, z_train)
+    model.tune(x_validation, z_validation)
+
+    # Estimate CDE loss
+    print(model.estimate_error(x_test, z_test))
+
+    # Calculate conditional density estimates
+    cdes, z_grid = model.predict(x_test, n_grid=200)
+
+    for ii in range(10):
+        true_density = scipy.stats.norm.pdf(z_grid, x_test[ii], 1)
+        plt.plot(z_grid, cdes[ii, :])
+        plt.plot(z_grid, true_density, color = "green")
+        plt.axvline(x=z_test[ii], color="red")
+        plt.show()
+
+  #+END_SRC
