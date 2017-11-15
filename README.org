@@ -23,8 +23,8 @@ original [[https://github.com/rizbicki/FlexCoDE][R package]].
 
 * Installation
   #+BEGIN_SRC shell
-  git clone https://github.com/tpospisi/Flexcode.git
-  pip install Flexcode[all]
+  git clone https://github.com/tpospisi/FlexCode.git
+  pip install FlexCode[all]
   #+END_SRC
 
   Flexcode handles a number of regression models; if you wish to avoid
