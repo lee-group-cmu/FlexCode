@@ -47,7 +47,17 @@ def fourier_basis(z, n_basis):
     :rtype: numpy matrix
 
     """
-    raise NotImplementedError
+
+    n_obs = z.shape[0]
+    basis = np.zeros((n_obs, n_basis))
+
+    basis[:, 0] = 1.0
+    for ii in range(1, (n_basis + 1) // 2):
+        basis[:, 2 * ii - 1] = np.sqrt(2) * np.sin(2 * np.pi * ii * z)
+        basis[:, 2 * ii] = np.sqrt(2) * np.cos(2 * np.pi * ii * z)
+        if n_basis % 2 == 0:
+            basis[:, -1] = np.sqrt(2) * np.sin(np.pi * n_basis * z)
+    return basis
 
 def daubechies_basis(z, n_basis):
     """Evaluates Daubechies basis
