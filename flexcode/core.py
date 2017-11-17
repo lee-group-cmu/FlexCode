@@ -9,7 +9,7 @@ from .loss_functions import cde_loss
 class FlexCodeModel(object):
     def __init__(self, model, max_basis, basis_system="cosine",
                  z_min=None, z_max=None, regression_params={}):
-        """FIXME! briefly describe function
+        """Initialize FlexCodeModel object
 
         :param model: A FlexCodeRegression object
         :param max_basis: int, the maximal number of basis functions
@@ -20,8 +20,6 @@ class FlexCodeModel(object):
         to the maximum of the training values
         :param regression_params: A dictionary of tuning parameters
         for the regression model
-        :returns:
-        :rtype:
 
         """
         self.max_basis = max_basis
@@ -87,21 +85,31 @@ class FlexCodeModel(object):
             cdes = np.matmul(coefs, z_basis.T)
             cdes /= self.z_max - self.z_min
 
-            cdes = normalize(cdes, z_grid)
+            normalize(cdes, z_grid)
 
             if bump_threshold_grid is not None:
                 self.bump_threshold = choose_bump_threshold(cdes, z_grid,
                                                             z_validation,
                                                             bump_threshold_grid)
 
-                cdes = remove_bumps(cdes, z_grid, self.bump_threshold)
-                cdes = normalize(cdes, z_grid)
+                remove_bumps(cdes, z_grid, self.bump_threshold)
+                normalize(cdes, z_grid)
 
             if sharpen_grid is not None:
                 self.sharpen_alpha = choose_sharpen(cdes, z_grid, z_validation,
                                                     sharpen_grid)
 
     def predict(self, x_new, n_grid):
+        """Predict conditional density estimates on new data
+
+        :param x_new: A numpy matrix of covariates at which to predict
+        :param n_grid: int, the number of grid points at which to
+        predict the conditional density
+        :returns: A numpy matrix where each row is a conditional
+        density estimate at the grid points
+        :rtype: numpy matrix
+
+        """
         z_grid = np.linspace(self.z_min, self.z_max, n_grid)
         z_basis = evaluate_basis(np.linspace(0, 1, n_grid),
                                  self.max_basis, self.basis_system)
@@ -115,13 +123,23 @@ class FlexCodeModel(object):
         cdes /= self.z_max - self.z_min
 
         # Post-process
-        cdes = normalize(cdes, z_grid)
+        normalize(cdes, z_grid)
         if self.bump_threshold is not None:
-            cdes = remove_bumps(cdes, z_grid, self.bump_threshold)
+            remove_bumps(cdes, z_grid, self.bump_threshold)
         if self.sharpen_alpha is not None:
-            cdes = sharpen(cdes, z_grid, self.sharpen_alpha)
+            sharpen(cdes, z_grid, self.sharpen_alpha)
         return cdes, z_grid
 
     def estimate_error(self, x_test, z_test, n_grid = 100):
+        """Estimates CDE loss on test data
+
+        :param x_test: A numpy matrix of covariates
+        :param z_test: A numpy matrix of z values
+        :param n_grid: Number of grid points at which to predict the
+        conditional density
+        :returns: an estimate of the CDE loss
+        :rtype: float
+
+        """
         cde_estimate, z_grid = self.predict(x_test, n_grid)
         return cde_loss(cde_estimate, z_grid, z_test)

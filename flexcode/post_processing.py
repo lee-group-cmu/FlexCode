@@ -14,10 +14,10 @@ def normalize(cde_estimates, z_grid, tol=1e-6, max_iter=200):
 
     """
     if cde_estimates.ndim == 1:
-        return _normalize(cde_estimates, z_grid, tol, max_iter)
+        _normalize(cde_estimates, z_grid, tol, max_iter)
     else:
-        return np.apply_along_axis(_normalize, 1, cde_estimates,
-                                   z_grid=z_grid, tol=tol, max_iter=max_iter)
+        np.apply_along_axis(_normalize, 1, cde_estimates,
+                            z_grid=z_grid, tol=tol, max_iter=max_iter)
 
 def _normalize(density, z_grid, tol=1e-6, max_iter=200):
     """Normalizes a density estimate to be non-negative and integrate to
@@ -36,8 +36,10 @@ def _normalize(density, z_grid, tol=1e-6, max_iter=200):
 
     area = np.trapz(np.maximum(density, 0.0), z_grid)
     if area < 1:
-        return np.maximum(density / area, 0.0)
-    
+        density /= area
+        density[density < 0.0] = 0.0
+        return
+
     for _ in range(max_iter):
         mid = (hi + lo) / 2
         tmp_density = np.maximum(density - mid, 0.0)
@@ -50,7 +52,9 @@ def _normalize(density, z_grid, tol=1e-6, max_iter=200):
         else:
             lo = mid
 
-    return tmp_density
+    # update in place
+    density -= mid
+    density[density < 0.0] = 0.0
 
 def sharpen(cde_estimates, z_grid, alpha):
     """Sharpens conditional density estimates.
@@ -62,7 +66,8 @@ def sharpen(cde_estimates, z_grid, alpha):
     :rtype: numpy array or matrix.
 
     """
-    return normalize(cde_estimates ** alpha, z_grid)
+    cde_estimates **= alpha
+    normalize(cde_estimates, z_grid)
 
 def choose_sharpen(cde_estimates, z_grid, true_z, alpha_grid):
     """Chooses the sharpen parameter by minimizing cde loss.
@@ -78,9 +83,9 @@ def choose_sharpen(cde_estimates, z_grid, true_z, alpha_grid):
     best_alpha = None
     best_loss = np.inf
     for alpha in alpha_grid:
-        sharpened_estimates = sharpen(cde_estimates, z_grid, alpha)
-        sharpened_estimates = normalize(sharpened_estimates, z_grid)
-        loss = cde_loss(sharpened_estimates, z_grid, true_z)
+        tmp_estimates = cde_estimates.copy()
+        sharpen(tmp_estimates, z_grid, alpha)
+        loss = cde_loss(tmp_estimates, z_grid, true_z)
         if loss < best_loss:
             best_loss = loss
             best_alpha = alpha
@@ -97,11 +102,11 @@ def remove_bumps(cde_estimates, z_grid, delta):
 
     """
     if cde_estimates.ndim == 1:
-        cde_estimates = _remove_bumps(cde_estimates, z_grid, delta)
+        _remove_bumps(cde_estimates, z_grid, delta)
     else:
-        cde_estimates = np.apply_along_axis(_remove_bumps, 1, cde_estimates,
-                                            z_grid=z_grid, delta = delta)
-    return normalize(cde_estimates, z_grid)
+        np.apply_along_axis(_remove_bumps, 1, cde_estimates,
+                            z_grid=z_grid, delta = delta)
+    normalize(cde_estimates, z_grid)
 
 def _remove_bumps(density, z_grid, delta):
     """Removes bumps in conditional density estimates.
@@ -126,7 +131,6 @@ def _remove_bumps(density, z_grid, delta):
             area += val * bin_size
     if area < delta: # final check at end
         density[left_idx:] = 0.0
-    return density
 
 def choose_bump_threshold(cde_estimates, z_grid, true_z, delta_grid):
     """Chooses the bump threshold which minimizes cde loss.
@@ -143,9 +147,10 @@ def choose_bump_threshold(cde_estimates, z_grid, true_z, delta_grid):
     best_delta = None
     best_loss = np.inf
     for delta in delta_grid:
-        shrunk_estimates = remove_bumps(cde_estimates, z_grid, delta)
-        shrunk_estimates = normalize(shrunk_estimates, z_grid)
-        loss = cde_loss(shrunk_estimates, z_grid, true_z)
+        tmp_estimates = cde_estimates.copy()
+        remove_bumps(tmp_estimates, z_grid, delta)
+        normalize(tmp_estimates, z_grid)
+        loss = cde_loss(tmp_estimates, z_grid, true_z)
         if loss < best_loss:
             best_loss = loss
             best_delta = delta
