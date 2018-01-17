@@ -35,7 +35,7 @@ original [[https://github.com/rizbicki/FlexCoDE][R package]].
   + sklearn (for nearest neighbor regression, random forests)
 
 * A simple example
-  #+BEGIN_SRC python
+  #+BEGIN_SRC python :exports code
     import numpy as np
     import scipy.stats
     import flexcode
@@ -72,5 +72,65 @@ original [[https://github.com/rizbicki/FlexCoDE][R package]].
         plt.plot(z_grid, true_density, color = "green")
         plt.axvline(x=z_test[ii], color="red")
         plt.show()
+
+  #+END_SRC
+* FlexZBoost Buzzard Data
+  One particular realization of the FlexCode algorithm is FlexZBoost
+  which uses XGBoost as the regression method. We apply this method to
+  photo-z estimation in the LSST DESC DC-1. For members of the LSST
+  DESC, you can find information on obtaining the data [[https://confluence.slac.stanford.edu/pages/viewpage.action?spaceKey=LSSTDESC&title=DC1+resources][here]].
+
+  #+BEGIN_SRC python :exports code
+    import numpy as np
+    import pandas as pd
+    import flexcode
+    from flexcode.regression_models import XGBoost
+
+    # Read in data
+    def process_data(feature_file, has_z=False):
+        """Processes buzzard data"""
+        df = pd.read_table(feature_file, sep=" ")
+        df["ug"] = df["u"] - df["g"]
+
+        df.assign(ug = df.u - df.g,
+                  gr = df.g - df.r,
+                  ri = df.r - df.i,
+                  iz = df.i - df.z,
+                  zy = df.z - df.y,
+                  ug_err = np.sqrt(df['u.err'] ** 2 + df['g.err'] ** 2),
+                  gr_err = np.sqrt(df['g.err'] ** 2 + df['r.err'] ** 2),
+                  ri_err = np.sqrt(df['r.err'] ** 2 + df['i.err'] ** 2),
+                  iz_err = np.sqrt(df['i.err'] ** 2 + df['z.err'] ** 2),
+                  zy_err = np.sqrt(df['z.err'] ** 2 + df['y.err'] ** 2))
+
+        if has_z:
+            z = df.redshift.as_matrix()
+            df.drop('redshift', axis=1, inplace=True)
+        else:
+            z = None
+
+        return df.as_matrix(), z
+
+    x_data, z_data = process_data('buzzard_spec_witherrors_mass.txt', has_z=True)
+    x_test, _ = process_data('buzzard_phot_witherrors_mass.txt', has_z=False)
+
+    n_obs = x_data.shape[0]
+    n_train = round(n_obs * 0.8)
+    n_validation = n_obs - n_train
+
+    perm = np.random.permutation(n_obs)
+    x_train = x_data[perm[:n_train], :]
+    z_train = z_data[perm[:n_train]]
+    x_validation = x_data[perm[n_train:]]
+    z_validation = z_data[perm[n_train:]]
+
+    # Fit the model
+    model = flexcode.FlexCodeModel(XGBoost, max_basis=40, basis_system='cosine',
+                                   regression_params={"num_round":2000})
+    model.fit(x_train, z_train)
+    model.tune(x_validation, z_validation)
+
+    # Make predictions
+    cdes, z_grid = model.predict(x_test, n_grid=200)
 
   #+END_SRC
