@@ -23,7 +23,7 @@ class FlexCodeModel(object):
 
         """
         self.max_basis = max_basis
-        self.best_basis = max_basis
+        self.best_basis = range(max_basis)
         self.basis_system = basis_system
         self.model = model(max_basis, regression_params)
 
@@ -47,13 +47,13 @@ class FlexCodeModel(object):
         if self.z_max is None:
             self.z_max = max(z_train)
 
-        z_train = box_transform(z_train, self.z_min, self.z_max)
-        z_basis = evaluate_basis(z_train, self.max_basis, self.basis_system)
+        z_basis = evaluate_basis(box_transform(z_train, self.z_min, self.z_max),
+                                 self.max_basis, self.basis_system)
 
         self.model.fit(x_train, z_basis)
 
     def tune(self, x_validation, z_validation, bump_threshold_grid =
-             None, sharpen_grid = None):
+             None, sharpen_grid = None, n_grid=1000):
         """Set tuning parameters to minimize CDE loss
 
         Sets best_basis, bump_delta, and sharpen_alpha values attributes
@@ -62,26 +62,28 @@ class FlexCodeModel(object):
         :param z_validation: a numpy array of z values
         :param bump_threshold_grid: an array of candidate bump threshold values
         :param sharpen_grid: an array of candidate sharpen parameter values
+        :param n_grid: integer, the number of grid points to evaluate
         :returns: None
         :rtype:
 
         """
-        z_validation = box_transform(z_validation, self.z_min, self.z_max)
-        z_basis = evaluate_basis(z_validation, self.max_basis, self.basis_system)
+        z_basis = evaluate_basis(box_transform(z_validation, self.z_min, self.z_max),
+                                 self.max_basis, self.basis_system)
 
         coefs = self.model.predict(x_validation)
 
         term1 = np.mean(coefs ** 2, 0)
         term2 = np.mean(coefs * z_basis, 0)
-        losses = np.cumsum(term1 - 2 * term2)
-        self.best_basis = np.argmin(losses) + 1
+        # losses = np.cumsum(term1 - 2 * term2)
+        self.best_basis = np.where(term1 - 2 * term2 < 0.0)[0]
 
         if bump_threshold_grid is not None or sharpen_grid is not None:
-            coefs = coefs[:, :self.best_basis]
-            n_grid = 200
+            coefs = coefs[:, self.best_basis]
             z_grid = np.linspace(self.z_min, self.z_max, n_grid)
 
-            z_basis = evaluate_basis(z_grid, self.best_basis, self.basis_system)
+            z_basis = evaluate_basis(np.linspace(0, 1, n_grid),
+                                     max(self.best_basis) + 1, self.basis_system)
+            z_basis = z_basis[:, self.best_basis]
             cdes = np.matmul(coefs, z_basis.T)
             cdes /= self.z_max - self.z_min
 
@@ -112,13 +114,9 @@ class FlexCodeModel(object):
         """
         z_grid = np.linspace(self.z_min, self.z_max, n_grid)
         z_basis = evaluate_basis(np.linspace(0, 1, n_grid),
-                                 self.max_basis, self.basis_system)
-        coefs = self.model.predict(x_new)
-
-        # Restrict to the best basis
-        coefs = coefs[:, :(self.best_basis + 1)]
-        z_basis = z_basis[:, :(self.best_basis + 1)]
-
+                                 max(self.best_basis) + 1, self.basis_system)
+        z_basis = z_basis[:, self.best_basis]
+        coefs = self.model.predict(x_new)[:, self.best_basis]
         cdes = np.matmul(coefs, z_basis.T)
         cdes /= self.z_max - self.z_min
 
@@ -130,7 +128,7 @@ class FlexCodeModel(object):
             sharpen(cdes, z_grid, self.sharpen_alpha)
         return cdes, z_grid
 
-    def estimate_error(self, x_test, z_test, n_grid = 100):
+    def estimate_error(self, x_test, z_test, n_grid = 1000):
         """Estimates CDE loss on test data
 
         :param x_test: A numpy matrix of covariates

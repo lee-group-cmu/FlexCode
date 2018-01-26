@@ -1,4 +1,5 @@
 import numpy as np
+import pywt
 
 def evaluate_basis(z, n_basis, basis_system):
     """Evaluates a system of basis functions
@@ -14,10 +15,9 @@ def evaluate_basis(z, n_basis, basis_system):
         return cosine_basis(z, n_basis)
     elif basis_system == "Fourier":
         return fourier_basis(z, n_basis)
-    elif basis_system == "Haar":
-        return haar_basis(z, n_basis)
-    elif basis_system == "Daubechies":
-        return daubechies_basis(z, n_basis)
+    else:
+        return wavelet_basis(z, n_basis, basis_system)
+
 
     raise ValueError("basis_system: {} not recognized".format(basis_system))
 
@@ -59,7 +59,7 @@ def fourier_basis(z, n_basis):
             basis[:, -1] = np.sqrt(2) * np.sin(np.pi * n_basis * z)
     return basis
 
-def daubechies_basis(z, n_basis):
+def wavelet_basis(z, n_basis, family='db4'):
     """Evaluates Daubechies basis
 
     :param z: array of z values in [0, 1]
@@ -68,16 +68,63 @@ def daubechies_basis(z, n_basis):
     :rtype: numpy matrix
 
     """
-    raise NotImplementedError
+    n_aux = 15
+    rez = pywt.DiscreteContinuousWavelet(family).wavefun(n_aux)
+    if len(rez) == 2:
+        wavelet, x = rez
+    else:
+        _, wavelet, x = rez
+    wavelet *= np.sqrt(max(x) - min(x))
+    x = (x - min(x)) / (max(x) - min(x))
+    def wave_fun(t):
+        if t < 0 or t > 1:
+            return 0.0
+        return wavelet[np.argmin(abs(t - x))]
 
+    n_obs = z.shape[0]
+    basis = np.empty((n_obs, n_basis))
+    basis[:, 0] = 1.0
 
-def haar_basis(z, n_basis):
-    """Evaluates Haar basis
+    ii = 1
+    loc = 0
+    level = 0
+    for ii in range(1, n_basis):
+        basis[:, ii] = [2 ** (level / 2) * wave_fun(a * 2 ** level - loc) for a in z]
+        loc += 1
+        if loc == 2 ** level:
+            loc = 0
+            level += 1
+    return basis
 
-    :param z: array of z values in [0, 1]
-    :param n_basis: int, the number of basis functions to calculate
-    :returns: the matrix of Haar basis functions evaluated at z
-    :rtype: numpy matrix
+# def haar_basis(z, n_basis):
+#     """Evaluates Haar basis
 
-    """
-    raise NotImplementedError
+#     :param z: array of z values in [0, 1]
+#     :param n_basis: int, the number of basis functions to calculate
+#     :returns: the matrix of Haar basis functions evaluated at z
+#     :rtype: numpy matrix
+
+#     """
+#     n_aux = 14
+#     _, wavelet, x = pywt.Wavelet("haar").wavefun(n_aux)
+#     x = (x - min(x)) / (max(x) - min(x))
+#     def wave_fun(t):
+#         if t < 0 or t > 1:
+#             return 0.0
+#         return wavelet[np.argmin(abs(t - x))]
+
+#     n_obs = z.shape[0]
+#     basis = np.empty((n_obs, n_basis))
+#     basis[:, 0] = 1.0
+
+#     ii = 1
+#     loc = 0
+#     level = 0
+#     for ii in range(1, n_basis):
+#         basis[:, ii] = [2 ** (level / 2) * wave_fun(2 ** level * a - loc) for a in z]
+
+#         loc += 1
+#         if loc == 2 ** level:
+#             loc = 0
+#             level += 1
+#     return basis

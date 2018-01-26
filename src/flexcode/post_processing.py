@@ -19,7 +19,7 @@ def normalize(cde_estimates, z_grid, tol=1e-6, max_iter=200):
         np.apply_along_axis(_normalize, 1, cde_estimates,
                             z_grid=z_grid, tol=tol, max_iter=max_iter)
 
-def _normalize(density, z_grid, tol=1e-6, max_iter=200):
+def _normalize(density, z_grid, tol=1e-6, max_iter=500):
     """Normalizes a density estimate to be non-negative and integrate to
     one.
 
@@ -35,7 +35,10 @@ def _normalize(density, z_grid, tol=1e-6, max_iter=200):
     lo = 0.0
 
     area = np.trapz(np.maximum(density, 0.0), z_grid)
-    if area < 1:
+    if area == 0.0:
+        # replace with uniform if all negative density
+        density[:] = 1 / (max(z_grid) - min(z_grid))
+    elif area < 1:
         density /= area
         density[density < 0.0] = 0.0
         return
@@ -106,7 +109,6 @@ def remove_bumps(cde_estimates, z_grid, delta):
     else:
         np.apply_along_axis(_remove_bumps, 1, cde_estimates,
                             z_grid=z_grid, delta = delta)
-    normalize(cde_estimates, z_grid)
 
 def _remove_bumps(density, z_grid, delta):
     """Removes bumps in conditional density estimates.
@@ -125,12 +127,13 @@ def _remove_bumps(density, z_grid, delta):
         if val <= 0.0:
             if area < delta:
                 density[left_idx:(right_idx + 1)] = 0.0
-            left_idx = right_idx
+            left_idx = right_idx + 1
             area = 0.0
         else:
             area += val * bin_size
     if area < delta: # final check at end
         density[left_idx:] = 0.0
+        _normalize(density, z_grid)
 
 def choose_bump_threshold(cde_estimates, z_grid, true_z, delta_grid):
     """Chooses the bump threshold which minimizes cde loss.
