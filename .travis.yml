@@ -9,6 +9,7 @@ deploy:
   provider: pypi
   on:
     tags: true
+    condition: $TRAVIS_PYTHON_VERSION = "3.6"
   user: tpospisi
   password:
     secure: oOtSw47ptRh+ELY0r3llOm2tjMy5iqhaxpnMEVgp48owe2MhvMxvvhtSxvFfRklzmFjB45hBVuERYjp1LXA9paC1rCEnigqgHisiyNHx7+QdQ4qGehv155pTDUOSXiPObiozEgE2rM6QXkwdAbAVvDt9f7YA0UjgQ+AQrDGBGuAWxqLi/aoCsqUcnwdkk64CNJq4J9W9S7KfJuUPcOVTorujA21p9/r8sOUUFDwkb7TmXOc+8LDDl6IEkgjhcckjOMGBW4Byh+bz6EfSbM1JkHdSlBLYFMdysO9WII3YhvMr4kGTEmBfeSI5p/J9lAtQAexiV2pWLobMFOZYt37LHDtMY7xaBR1bWPITkJevS26rFQ6WB+hypi1TDINB9apVXOzw/rPd8OvjKg4H6pNbCIGHL1NEwHxuvEIVFVxU/n9981CesC02NyC9PqIiL2ahihkk0f0j7b/an2tyundipgPPydg9Ut+GWVGG597Nban4awEy3zaCdGF8VCzaW76/neT0zrteOVKtpzSg/yJBq9/7Zqm4L7uCX5qGFIpguT4B4iab2GMPOZ5xSE5NqRjq2++3xr8aP86MSyJel4d1z/4C22FBmsugJb6QoiQD4VdvJVVDKxNqLC8zOAghZ4sIJ3/EgCDLSw5h+3iT/VcLiaQZLio+PqN/Zrx//LYFgDg=
