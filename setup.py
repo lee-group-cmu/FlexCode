@@ -1,12 +1,12 @@
 from setuptools import setup
 
 setup(name = "flexcode",
-      version = "0.1.1",
+      version = "0.1.2",
       license="GPL",
       description="Fits Flexible Conditional Density Estimator (FlexCode)",
       author="Taylor Pospisil",
+      maintainer="Taylor Pospisil",
       author_email="tpospisi@andrew.cmu.edu",
-      maintainer="tpospisi@andrew.cmu.edu",
       url="http://github.com/tpospisi/Flexcode",
       package_dir={"":"src"},
       packages=["flexcode"],
@@ -16,7 +16,7 @@ setup(name = "flexcode",
       zip_safe=True,
       extras_require={
           "xgboost" : ["xgboost"],
-          "sklearn" : ["sklearn"],
+          "sklearn" : ["sklearn>=0.18"],
         "all" : ["sklearn", "xgboost"],
       },
 )
