@@ -29,7 +29,7 @@ class NN(FlexCodeRegression):
         if not SKLEARN_AVAILABLE:
             raise Exception("NN requires sklearn to be installed")
 
-        super().__init__(max_basis)
+        super(NN, self).__init__(max_basis)
 
         self.k = params.get("k", 5)
         self.nn = sklearn.neighbors.NearestNeighbors()
@@ -51,7 +51,7 @@ class RandomForest(FlexCodeRegression):
         if not SKLEARN_AVAILABLE:
             raise Exception("RandomForest requires sklearn to be installed")
 
-        super().__init__(max_basis)
+        super(RandomForest, self).__init__(max_basis)
         self.models = [sklearn.ensemble.RandomForestRegressor()
                        for ii in range(self.max_basis)]
 
@@ -68,7 +68,7 @@ class RandomForest(FlexCodeRegression):
 
 class XGBoost(FlexCodeRegression):
     def __init__(self, max_basis, params):
-        super().__init__(max_basis)
+        super(XGBoost, self).__init__(max_basis)
 
         self.params = {'max_depth' : params.get("max_depth", 6),
                        'eta' : params.get("eta", 0.3),

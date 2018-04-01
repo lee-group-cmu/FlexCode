@@ -34,6 +34,8 @@ def _normalize(density, z_grid, tol=1e-6, max_iter=500):
     hi = np.max(density)
     lo = 0.0
 
+    z_grid = z_grid.flatten()
+
     area = np.trapz(np.maximum(density, 0.0), z_grid)
     if area == 0.0:
         # replace with uniform if all negative density

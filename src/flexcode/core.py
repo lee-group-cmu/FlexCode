@@ -1,6 +1,6 @@
 import numpy as np
 
-from .helpers import box_transform
+from .helpers import box_transform, make_grid
 from .basis_functions import evaluate_basis
 from .post_processing import *
 from .loss_functions import cde_loss
@@ -112,8 +112,8 @@ class FlexCodeModel(object):
         :rtype: numpy matrix
 
         """
-        z_grid = np.linspace(self.z_min, self.z_max, n_grid)
-        z_basis = evaluate_basis(np.linspace(0, 1, n_grid),
+        z_grid = make_grid(n_grid, self.z_min, self.z_max)
+        z_basis = evaluate_basis(box_transform(z_grid, self.z_min, self.z_max),
                                  max(self.best_basis) + 1, self.basis_system)
         z_basis = z_basis[:, self.best_basis]
         coefs = self.model.predict(x_new)[:, self.best_basis]
