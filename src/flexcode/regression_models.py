@@ -17,7 +17,7 @@ class FlexCodeRegression(object):
     def __init__(self, max_basis):
         self.max_basis = max_basis
 
-    def fit(self, x_train, z_basis):
+    def fit(self, x_train, z_basis, weight):
         pass
 
     def predict(self, x_new):
@@ -34,7 +34,9 @@ class NN(FlexCodeRegression):
         self.k = params.get("k", 5)
         self.nn = sklearn.neighbors.NearestNeighbors()
 
-    def fit(self, x_train, z_basis):
+    def fit(self, x_train, z_basis, weight):
+        if weight is not None:
+            raise Exception("Weights not implemented for NN")
         self.nn.fit(x_train)
         self.z_basis = z_basis
 
@@ -57,6 +59,8 @@ class RandomForest(FlexCodeRegression):
                        for ii in range(self.max_basis)]
 
     def fit(self, x_train, z_basis):
+        if weight is not None:
+            raise Exception("Weights not implemented for RandomForest")
         for ii in range(self.max_basis):
             self.models[ii].fit(x_train, z_basis[:, ii])
 
@@ -80,10 +84,10 @@ class XGBoost(FlexCodeRegression):
                       }
         self.num_round = params.get("num_round", 500)
 
-    def fit(self, x_train, z_basis):
+    def fit(self, x_train, z_basis, weight):
         self.models = []
         for ii in range(self.max_basis):
-            dtrain = xgb.DMatrix(x_train, label=z_basis[:,ii])
+            dtrain = xgb.DMatrix(x_train, label=z_basis[:,ii], weight = weight)
             self.models.append(xgb.train(self.params, dtrain, self.num_round))
 
     def predict(self, x_test):

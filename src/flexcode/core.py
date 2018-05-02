@@ -33,11 +33,12 @@ class FlexCodeModel(object):
         self.bump_threshold = None
         self.sharpen_alpha = None
 
-    def fit(self, x_train, z_train):
+    def fit(self, x_train, z_train, weight = None):
         """Fits basis function regression models.
 
         :param x_train: a numpy matrix of training covariates.
         :param z_train: a numpy array of z values.
+        :param weight: (optional) a numpy array of weights.
         :returns: None.
         :rtype:
 
@@ -50,7 +51,7 @@ class FlexCodeModel(object):
         z_basis = evaluate_basis(box_transform(z_train, self.z_min, self.z_max),
                                  self.max_basis, self.basis_system)
 
-        self.model.fit(x_train, z_basis)
+        self.model.fit(x_train, z_basis, weight)
 
     def tune(self, x_validation, z_validation, bump_threshold_grid =
              None, sharpen_grid = None, n_grid=1000):
