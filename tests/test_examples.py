@@ -19,7 +19,9 @@ def test_example():
 
   # Fit and tune model
   model.fit(x_train, z_train)
-  model.tune(x_validation, z_validation)
+  model.tune(x_validation, z_validation,
+             bump_threshold_grid = np.linspace(0, 0.2, 3),
+             sharpen_grid = np.linspace(0.5, 1.5, 3))
 
   # Estimate CDE loss
   model.estimate_error(x_test, z_test)

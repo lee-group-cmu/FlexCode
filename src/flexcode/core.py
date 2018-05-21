@@ -80,14 +80,12 @@ class FlexCodeModel(object):
 
         if bump_threshold_grid is not None or sharpen_grid is not None:
             coefs = coefs[:, self.best_basis]
-            z_grid = np.linspace(self.z_min, self.z_max, n_grid)
-
-            z_basis = evaluate_basis(np.linspace(0, 1, n_grid),
+            z_grid = make_grid(n_grid, self.z_min, self.z_max)
+            z_basis = evaluate_basis(box_transform(z_grid, self.z_min, self.z_max),
                                      max(self.best_basis) + 1, self.basis_system)
             z_basis = z_basis[:, self.best_basis]
             cdes = np.matmul(coefs, z_basis.T)
             cdes /= self.z_max - self.z_min
-
             normalize(cdes, z_grid)
 
             if bump_threshold_grid is not None:
