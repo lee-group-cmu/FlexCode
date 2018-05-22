@@ -14,22 +14,18 @@ def test_remove_bumps():
     target_density = density.copy()
     target_density[:4] = 0.0
     target_density[96:] = 0.0
-    normalize(target_density, z_grid)
+    normalize(target_density)
 
-    remove_bumps(density, z_grid, delta)
+    remove_bumps(density, delta)
 
     np.testing.assert_array_equal(density, target_density)
 
 def test_normalize():
     n_grid = 1000
 
-    min_z = -1
-    max_z = 1
-    z_grid = np.linspace(min_z, max_z, n_grid)
-
     for _ in range(10):
         density = np.random.gamma(1, 1, size=n_grid)
-        normalize(density, z_grid)
-        area = np.trapz(density, z_grid)
+        normalize(density)
+        area = np.mean(density)
         assert all(density >= 0.0)
         assert area == pytest.approx(1.0)

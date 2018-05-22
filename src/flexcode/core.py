@@ -68,8 +68,8 @@ class FlexCodeModel(object):
         :rtype:
 
         """
-        z_basis = evaluate_basis(box_transform(z_validation, self.z_min, self.z_max),
-                                 self.max_basis, self.basis_system)
+        z_validation = box_transform(z_validation, self.z_min, self.z_max)
+        z_basis = evaluate_basis(z_validation, self.max_basis, self.basis_system)
 
         coefs = self.model.predict(x_validation)
 
@@ -85,20 +85,21 @@ class FlexCodeModel(object):
                                      max(self.best_basis) + 1, self.basis_system)
             z_basis = z_basis[:, self.best_basis]
             cdes = np.matmul(coefs, z_basis.T)
-            cdes /= self.z_max - self.z_min
-            normalize(cdes, z_grid)
+            normalize(cdes)
 
             if bump_threshold_grid is not None:
                 self.bump_threshold = choose_bump_threshold(cdes, z_grid,
                                                             z_validation,
                                                             bump_threshold_grid)
 
-                remove_bumps(cdes, z_grid, self.bump_threshold)
-                normalize(cdes, z_grid)
+                remove_bumps(cdes, self.bump_threshold)
+                normalize(cdes)
 
             if sharpen_grid is not None:
                 self.sharpen_alpha = choose_sharpen(cdes, z_grid, z_validation,
                                                     sharpen_grid)
+
+
 
     def predict(self, x_new, n_grid):
         """Predict conditional density estimates on new data
@@ -111,21 +112,21 @@ class FlexCodeModel(object):
         :rtype: numpy matrix
 
         """
-        z_grid = make_grid(n_grid, self.z_min, self.z_max)
-        z_basis = evaluate_basis(box_transform(z_grid, self.z_min, self.z_max),
-                                 max(self.best_basis) + 1, self.basis_system)
+        z_grid = make_grid(n_grid, 0.0, 1.0)
+        z_basis = evaluate_basis(z_grid, max(self.best_basis) + 1,
+                                 self.basis_system)
         z_basis = z_basis[:, self.best_basis]
         coefs = self.model.predict(x_new)[:, self.best_basis]
         cdes = np.matmul(coefs, z_basis.T)
-        cdes /= self.z_max - self.z_min
 
         # Post-process
-        normalize(cdes, z_grid)
+        normalize(cdes)
         if self.bump_threshold is not None:
-            remove_bumps(cdes, z_grid, self.bump_threshold)
+            remove_bumps(cdes, self.bump_threshold)
         if self.sharpen_alpha is not None:
-            sharpen(cdes, z_grid, self.sharpen_alpha)
-        return cdes, z_grid
+            sharpen(cdes, self.sharpen_alpha)
+        cdes /= self.z_max - self.z_min
+        return cdes, make_grid(n_grid, self.z_min, self.z_max)
 
     def estimate_error(self, x_test, z_test, n_grid = 1000):
         """Estimates CDE loss on test data
