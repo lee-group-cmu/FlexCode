@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name = "flexcode",
-      version = "0.1.4",
+      version = "0.1.5",
       license="GPL",
       description="Fits Flexible Conditional Density Estimator (FlexCode)",
       author="Taylor Pospisil",

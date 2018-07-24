@@ -43,6 +43,11 @@ class FlexCodeModel(object):
         :rtype:
 
         """
+        if len(x_train.shape) == 1:
+            x_train = x_train.reshape(-1, 1)
+        if len(z_train.shape) == 1:
+            z_train = z_train.reshape(-1, 1)
+
         if self.z_min is None:
             self.z_min = min(z_train)
         if self.z_max is None:
@@ -68,6 +73,11 @@ class FlexCodeModel(object):
         :rtype:
 
         """
+        if len(x_validation.shape) == 1:
+            x_validation = x_validation.reshape(-1, 1)
+        if len(z_validation.shape) == 1:
+            z_validation = z_validation.reshape(-1, 1)
+
         z_validation = box_transform(z_validation, self.z_min, self.z_max)
         z_basis = evaluate_basis(z_validation, self.max_basis, self.basis_system)
 
@@ -112,6 +122,9 @@ class FlexCodeModel(object):
         :rtype: numpy matrix
 
         """
+        if len(x_new.shape) == 1:
+            x_new = x_new.reshape(-1, 1)
+
         z_grid = make_grid(n_grid, 0.0, 1.0)
         z_basis = evaluate_basis(z_grid, max(self.best_basis) + 1,
                                  self.basis_system)
@@ -139,5 +152,10 @@ class FlexCodeModel(object):
         :rtype: float
 
         """
+        if len(x_test.shape) == 1:
+            x_test = x_test.reshape(-1, 1)
+        if len(z_test.shape) == 1:
+            z_test = z_test.reshape(-1, 1)
+
         cde_estimate, z_grid = self.predict(x_test, n_grid)
         return cde_loss(cde_estimate, z_grid, z_test)
