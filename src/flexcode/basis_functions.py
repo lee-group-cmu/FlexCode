@@ -2,6 +2,8 @@
 
 import numpy as np
 import pywt
+from .post_processing import *
+from .helpers import box_transform, make_grid
 
 def evaluate_basis(responses, n_basis, basis_system):
     """Evaluates a system of basis functions.
@@ -193,3 +195,26 @@ def wavelet_basis(responses, n_basis, family='db4'):
             loc = 0
             level += 1
     return basis
+
+class BasisCoefs(object):
+    def __init__(self, coefs, basis_system, z_min, z_max, bump_threshold=None,
+                 sharpen_alpha=None):
+        self.coefs = coefs
+        self.basis_system = basis_system
+        self.z_min = z_min
+        self.z_max = z_max
+        self.bump_threshold = bump_threshold
+        self.sharpen_alpha = sharpen_alpha
+
+    def evaluate(self, z_grid):
+        basis = evaluate_basis(box_transform(z_grid, self.z_min, self.z_max),
+                               self.coefs.shape[1], self.basis_system)
+        cdes = np.matmul(self.coefs, basis.T)
+
+        normalize(cdes)
+        if self.bump_threshold is not None:
+            remove_bumps(cdes, self.bump_threshold)
+        if self.sharpen_alpha is not None:
+            sharpen(cdes, self.sharpen_alpha)
+        cdes /= self.z_max - self.z_min
+        return cdes

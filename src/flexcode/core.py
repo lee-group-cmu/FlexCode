@@ -1,7 +1,7 @@
 import numpy as np
 
 from .helpers import box_transform, make_grid
-from .basis_functions import evaluate_basis
+from .basis_functions import evaluate_basis, BasisCoefs
 from .post_processing import *
 from .loss_functions import cde_loss
 
@@ -111,10 +111,18 @@ class FlexCodeModel(object):
 
 
 
+    def predict_coefs(self, x_new):
+        if len(x_new.shape) == 1:
+            x_new = x_new.reshape(-1, 1)
+
+        coefs = self.model.predict(x_new)[:, self.best_basis]
+        return BasisCoefs(coefs, self.basis_system, self.z_min,
+                          self.z_max, self.bump_threshold, self.sharpen_alpha)
+
     def predict(self, x_new, n_grid):
         """Predict conditional density estimates on new data
 
-        :param x_new: A numpy matrix of covariates at which to predict
+n        :param x_new: A numpy matrix of covariates at which to predict
         :param n_grid: int, the number of grid points at which to
         predict the conditional density
         :returns: A numpy matrix where each row is a conditional
