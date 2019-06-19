@@ -79,15 +79,33 @@ class RandomForest(FlexCodeRegression):
             raise Exception("RandomForest requires sklearn to be installed")
 
         super(RandomForest, self).__init__(max_basis)
-        self.params = {
-            'n_estimators': params.get("n_estimators", 10)
-        }
-        self.models = sklearn.multioutput.MultiOutputRegressor(
+
+        params_opt, opt_flag = params_dict_optim_decision(params, multi_output=True)
+        self.params = params_opt
+        self.models = None if opt_flag else sklearn.multioutput.MultiOutputRegressor(
             sklearn.ensemble.RandomForestRegressor(**self.params), n_jobs=-1
         )
 
     def fit(self, x_train, z_basis, weight=None):
+        if self.models is None:
+            self.cv_optim(x_train, z_basis, weight)
+
         self.models.fit(x_train, z_basis, sample_weight=weight)
+
+    def cv_optim(self, x_train, z_basis, weight=None):
+        rf_obj = sklearn.multioutput.MultiOutputRegressor(
+            sklearn.ensemble.RandomForestRegressor(), n_jobs=-1
+        )
+        clf = sklearn.model_selection.GridSearchCV(
+            rf_obj, self.params, cv=5, scoring='neg_mean_squared_error', verbose=2,
+            fit_params={'sample_weight': weight}
+        )
+        clf.fit(x_train, z_basis)
+
+        self.params = params_name_format(clf.best_params_, str_rem='estimator__')
+        self.models = sklearn.multioutput.MultiOutputRegressor(
+            sklearn.ensemble.RandomForestRegressor(**self.params), n_jobs=-1
+        )
 
     def predict(self, x_test):
         coefs = self.models.predict(x_test)
