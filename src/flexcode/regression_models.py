@@ -118,18 +118,44 @@ class XGBoost(FlexCodeRegression):
             raise Exception("XGBoost requires xgboost to be installed")
         super(XGBoost, self).__init__(max_basis)
 
-        self.params = {
-            'max_depth': params.get("max_depth", 6),
-            'learning_rate': params.get("eta", 0.3),
-            'silent': params.get("silent", 1),
-            'objective': params.get("objective", 'reg:linear')
-        }
-        self.models = sklearn.multioutput.MultiOutputRegressor(
+        # Historically, people have used `eta` for `learning_rate` - taking that
+        # into account
+        if 'eta' in params:
+            params['learning_rate'] = params['eta']
+            del params['eta']
+
+        # Also, set the default values if not passed
+        params['max_depth'] = params.get("max_depth", 6)
+        params['learning_rate'] = params.get("learning_rate", 0.3)
+        params['silent'] = params.get("silent", 1)
+        params['objective'] = params.get("objective", 'reg:linear')
+
+        params_opt, opt_flag = params_dict_optim_decision(params, multi_output=True)
+        self.params = params_opt
+        self.models = None if opt_flag else sklearn.multioutput.MultiOutputRegressor(
             xgb.XGBRegressor(**self.params), n_jobs=-1
         )
 
-    def fit(self, x_train, z_basis, weight):
+    def fit(self, x_train, z_basis, weight=None):
+        if self.models is None:
+            self.cv_optim(x_train, z_basis, weight)
+
         self.models.fit(x_train, z_basis, sample_weight=weight)
+
+    def cv_optim(self, x_train, z_basis, weight=None):
+        xgb_obj = sklearn.multioutput.MultiOutputRegressor(
+            xgb.XGBRegressor(), n_jobs=-1
+        )
+        clf = sklearn.model_selection.GridSearchCV(
+            xgb_obj, self.params, cv=5, scoring='neg_mean_squared_error', verbose=2,
+            fit_params={'sample_weight': weight}
+        )
+        clf.fit(x_train, z_basis)
+
+        self.params = params_name_format(clf.best_params_, str_rem='estimator__')
+        self.models = sklearn.multioutput.MultiOutputRegressor(
+            xgb.XGBRegressor(**self.params), n_jobs=-1
+        )
 
     def predict(self, x_test):
         coefs = self.models.predict(x_test)
