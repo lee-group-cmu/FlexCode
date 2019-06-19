@@ -58,7 +58,7 @@ class RandomForest(FlexCodeRegression):
         self.models = [sklearn.ensemble.RandomForestRegressor(self.n_estimators)
                        for ii in range(self.max_basis)]
 
-    def fit(self, x_train, z_basis):
+    def fit(self, x_train, z_basis, weight=None):
         if weight is not None:
             raise Exception("Weights not implemented for RandomForest")
         for ii in range(self.max_basis):
