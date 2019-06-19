@@ -1,4 +1,6 @@
 import numpy as np
+from .helpers import params_dict_optim_decision
+from sklearn.model_selection import GridSearchCV
 
 try:
     import xgboost as xgb
@@ -32,21 +34,29 @@ class NN(FlexCodeRegression):
 
         super(NN, self).__init__(max_basis)
 
-        self.k = params.get("k", 5)
-        self.nn = sklearn.neighbors.NearestNeighbors()
+        # Historically, we have used 'k' to indicate the number of neighbors, so
+        # this just puts the right notation for KNeighborsRegressor
+        if 'k' in params:
+            params['n_neighbors'] = params['k']
+            del params['k']
+        params_opt, opt_flag = params_dict_optim_decision(params, False)
+
+        self.params = params_opt
+        self.models = None if opt_flag else sklearn.multioutput.MultiOutputRegressor(
+            sklearn.neighbors.KNeighborsRegressor(**self.params), n_jobs=-1
+        )
 
     def fit(self, x_train, z_basis, weight):
         if weight is not None:
             raise Exception("Weights not implemented for NN")
-        self.nn.fit(x_train)
-        self.z_basis = z_basis
+
+        if self.models is None:
+            raise Exception("CV-Optimization not implemented for NN")
+
+        self.models.fit(x_train, z_basis)
 
     def predict(self, x_test):
-        n_obs = x_test.shape[0]
-        coefs = np.empty((n_obs, self.max_basis))
-        neighbors = self.nn.kneighbors(x_test, self.k, False)
-        for ii in range(n_obs):
-            coefs[ii, :] = np.mean(self.z_basis[neighbors[ii], :], 0)
+        coefs = self.models.predict(x_test)
         return coefs
 
 
