@@ -9,6 +9,7 @@ except ImportError:
 try:
     import sklearn.ensemble
     import sklearn.neighbors
+    import sklearn.multioutput
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False
@@ -55,20 +56,15 @@ class RandomForest(FlexCodeRegression):
 
         super(RandomForest, self).__init__(max_basis)
         self.n_estimators = params.get("n_estimators", 10)
-        self.models = [sklearn.ensemble.RandomForestRegressor(self.n_estimators)
-                       for ii in range(self.max_basis)]
+        self.models = sklearn.multioutput.MultiOutputRegressor(
+            sklearn.ensemble.RandomForestRegressor(self.n_estimators), n_jobs=-1
+        )
 
     def fit(self, x_train, z_basis, weight=None):
-        if weight is not None:
-            raise Exception("Weights not implemented for RandomForest")
-        for ii in range(self.max_basis):
-            self.models[ii].fit(x_train, z_basis[:, ii])
+        self.models.fit(x_train, z_basis, sample_weight=weight)
 
     def predict(self, x_test):
-        n_obs = x_test.shape[0]
-        coefs = np.empty((n_obs, self.max_basis))
-        for ii in range(self.max_basis):
-            coefs[:, ii] = self.models[ii].predict(x_test)
+        coefs = self.models.predict(x_test)
         return coefs
 
 class XGBoost(FlexCodeRegression):
@@ -78,22 +74,21 @@ class XGBoost(FlexCodeRegression):
         super(XGBoost, self).__init__(max_basis)
 
         self.params = {'max_depth' : params.get("max_depth", 6),
-                       'eta' : params.get("eta", 0.3),
+                       'learning_rate' : params.get("eta", 0.3),
                        'silent' : params.get("silent", 1),
                        'objective' : params.get("objective", 'reg:linear')
                       }
-        self.num_round = params.get("num_round", 500)
+        # self.num_round = params.get("num_round", 500)
+
+        self.models = sklearn.multioutput.MultiOutputRegressor(
+            xgb.XGBRegressor(**self.params), n_jobs=-1
+        )
 
     def fit(self, x_train, z_basis, weight):
-        self.models = []
-        for ii in range(self.max_basis):
-            dtrain = xgb.DMatrix(x_train, label=z_basis[:,ii], weight = weight)
-            self.models.append(xgb.train(self.params, dtrain, self.num_round))
+        self.models.fit(x_train, z_basis, sample_weight=weight)
+
 
     def predict(self, x_test):
-        n_obs = x_test.shape[0]
-        coefs = np.empty((n_obs, self.max_basis))
-        dtest = xgb.DMatrix(x_test)
-        for ii in range(self.max_basis):
-            coefs[:, ii] = self.models[ii].predict(dtest)
+        coefs = self.models.predict(x_test)
         return coefs
+
