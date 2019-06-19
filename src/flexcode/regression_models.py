@@ -1,6 +1,5 @@
 import numpy as np
-from .helpers import params_dict_optim_decision
-from sklearn.model_selection import GridSearchCV
+from .helpers import params_dict_optim_decision, params_name_format
 
 try:
     import xgboost as xgb
@@ -12,6 +11,7 @@ try:
     import sklearn.ensemble
     import sklearn.neighbors
     import sklearn.multioutput
+    import sklearn.model_selection
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False
@@ -39,8 +39,7 @@ class NN(FlexCodeRegression):
         if 'k' in params:
             params['n_neighbors'] = params['k']
             del params['k']
-        params_opt, opt_flag = params_dict_optim_decision(params, False)
-
+        params_opt, opt_flag = params_dict_optim_decision(params, multi_output=True)
         self.params = params_opt
         self.models = None if opt_flag else sklearn.multioutput.MultiOutputRegressor(
             sklearn.neighbors.KNeighborsRegressor(**self.params), n_jobs=-1
@@ -51,9 +50,23 @@ class NN(FlexCodeRegression):
             raise Exception("Weights not implemented for NN")
 
         if self.models is None:
-            raise Exception("CV-Optimization not implemented for NN")
+            self.cv_optim(x_train, z_basis)
 
         self.models.fit(x_train, z_basis)
+
+    def cv_optim(self, x_train, z_basis):
+        nn_obj = sklearn.multioutput.MultiOutputRegressor(
+            sklearn.neighbors.KNeighborsRegressor(), n_jobs=-1
+        )
+        clf = sklearn.model_selection.GridSearchCV(
+            nn_obj, self.params, cv=5, scoring='neg_mean_squared_error', verbose=2
+        )
+        clf.fit(x_train, z_basis)
+
+        self.params = params_name_format(clf.best_params_, str_rem='estimator__')
+        self.models = sklearn.multioutput.MultiOutputRegressor(
+            sklearn.neighbors.KNeighborsRegressor(**self.params), n_jobs=-1
+        )
 
     def predict(self, x_test):
         coefs = self.models.predict(x_test)

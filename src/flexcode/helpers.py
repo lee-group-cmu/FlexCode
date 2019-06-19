@@ -59,3 +59,20 @@ def params_dict_optim_decision(params, multi_output=False):
 
     return out_param_dict, opt_flag
 
+
+def params_name_format(params, str_rem):
+    '''
+    Changes all the key in dictionaries to remove a specific word from each key (``estimator__``).
+    This is because in order to GridsearchCV on MultiOutputRegressor one needs to
+    use ``estimator__`` in all parameters - but once the best parameters are fetched
+    the name needs to be changed.
+
+    :param params: dictionary of model parameters
+    :param str_rem: word to be removed
+    :returns: dictionary of parameters in which the word has been removed in keys
+    '''
+    out_dict = {}
+    for k, v in params.items():
+        new_key = k.replace(str_rem, '') if str_rem in k else k
+        out_dict[new_key] = v
+    return out_dict
