@@ -49,15 +49,18 @@ class NN(FlexCodeRegression):
             coefs[ii, :] = np.mean(self.z_basis[neighbors[ii], :], 0)
         return coefs
 
+
 class RandomForest(FlexCodeRegression):
     def __init__(self, max_basis, params):
         if not SKLEARN_AVAILABLE:
             raise Exception("RandomForest requires sklearn to be installed")
 
         super(RandomForest, self).__init__(max_basis)
-        self.n_estimators = params.get("n_estimators", 10)
+        self.params = {
+            'n_estimators': params.get("n_estimators", 10)
+        }
         self.models = sklearn.multioutput.MultiOutputRegressor(
-            sklearn.ensemble.RandomForestRegressor(self.n_estimators), n_jobs=-1
+            sklearn.ensemble.RandomForestRegressor(**self.params), n_jobs=-1
         )
 
     def fit(self, x_train, z_basis, weight=None):
@@ -67,26 +70,25 @@ class RandomForest(FlexCodeRegression):
         coefs = self.models.predict(x_test)
         return coefs
 
+
 class XGBoost(FlexCodeRegression):
     def __init__(self, max_basis, params):
         if not XGBOOST_AVAILABLE:
             raise Exception("XGBoost requires xgboost to be installed")
         super(XGBoost, self).__init__(max_basis)
 
-        self.params = {'max_depth' : params.get("max_depth", 6),
-                       'learning_rate' : params.get("eta", 0.3),
-                       'silent' : params.get("silent", 1),
-                       'objective' : params.get("objective", 'reg:linear')
-                      }
-        # self.num_round = params.get("num_round", 500)
-
+        self.params = {
+            'max_depth': params.get("max_depth", 6),
+            'learning_rate': params.get("eta", 0.3),
+            'silent': params.get("silent", 1),
+            'objective': params.get("objective", 'reg:linear')
+        }
         self.models = sklearn.multioutput.MultiOutputRegressor(
             xgb.XGBRegressor(**self.params), n_jobs=-1
         )
 
     def fit(self, x_train, z_basis, weight):
         self.models.fit(x_train, z_basis, sample_weight=weight)
-
 
     def predict(self, x_test):
         coefs = self.models.predict(x_test)
