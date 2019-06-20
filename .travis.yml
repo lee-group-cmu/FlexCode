@@ -3,10 +3,7 @@ language: python
 python:
 - '2.7'
 - '3.6'
-install:
-- pip install tox-travis
-- pip install sklearn
-- pip install xgboost
+install: pip install tox-travis
 script: tox
 deploy:
   provider: pypi
