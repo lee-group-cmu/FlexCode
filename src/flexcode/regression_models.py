@@ -97,10 +97,9 @@ class RandomForest(FlexCodeRegression):
             sklearn.ensemble.RandomForestRegressor(), n_jobs=-1
         )
         clf = sklearn.model_selection.GridSearchCV(
-            rf_obj, self.params, cv=5, scoring='neg_mean_squared_error', verbose=2,
-            fit_params={'sample_weight': weight}
+            rf_obj, self.params, cv=5, scoring='neg_mean_squared_error', verbose=2
         )
-        clf.fit(x_train, z_basis)
+        clf.fit(x_train, z_basis, sample_weight=weight)
 
         self.params = params_name_format(clf.best_params_, str_rem='estimator__')
         self.models = sklearn.multioutput.MultiOutputRegressor(
@@ -147,10 +146,9 @@ class XGBoost(FlexCodeRegression):
             xgb.XGBRegressor(), n_jobs=-1
         )
         clf = sklearn.model_selection.GridSearchCV(
-            xgb_obj, self.params, cv=5, scoring='neg_mean_squared_error', verbose=2,
-            fit_params={'sample_weight': weight}
+            xgb_obj, self.params, cv=5, scoring='neg_mean_squared_error', verbose=2
         )
-        clf.fit(x_train, z_basis)
+        clf.fit(x_train, z_basis, sample_weight=weight)
 
         self.params = params_name_format(clf.best_params_, str_rem='estimator__')
         self.models = sklearn.multioutput.MultiOutputRegressor(
