@@ -1,4 +1,5 @@
 import numpy as np
+from .helpers import params_dict_optim_decision, params_name_format
 
 try:
     import xgboost as xgb
@@ -9,6 +10,8 @@ except ImportError:
 try:
     import sklearn.ensemble
     import sklearn.neighbors
+    import sklearn.multioutput
+    import sklearn.model_selection
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False
@@ -31,22 +34,44 @@ class NN(FlexCodeRegression):
 
         super(NN, self).__init__(max_basis)
 
-        self.k = params.get("k", 5)
-        self.nn = sklearn.neighbors.NearestNeighbors()
+        # Historically, we have used 'k' to indicate the number of neighbors, so
+        # this just puts the right notation for KNeighborsRegressor
+        if 'k' in params:
+            params['n_neighbors'] = params['k']
+            del params['k']
+        params_opt, opt_flag = params_dict_optim_decision(params, multi_output=True)
+        self.params = params_opt
+        self.models = None if opt_flag else sklearn.multioutput.MultiOutputRegressor(
+            sklearn.neighbors.KNeighborsRegressor(**self.params), n_jobs=-1
+        )
 
     def fit(self, x_train, z_basis, weight):
         if weight is not None:
             raise Exception("Weights not implemented for NN")
-        self.nn.fit(x_train)
-        self.z_basis = z_basis
+
+        if self.models is None:
+            self.cv_optim(x_train, z_basis)
+
+        self.models.fit(x_train, z_basis)
+
+    def cv_optim(self, x_train, z_basis):
+        nn_obj = sklearn.multioutput.MultiOutputRegressor(
+            sklearn.neighbors.KNeighborsRegressor(), n_jobs=-1
+        )
+        clf = sklearn.model_selection.GridSearchCV(
+            nn_obj, self.params, cv=5, scoring='neg_mean_squared_error', verbose=2
+        )
+        clf.fit(x_train, z_basis)
+
+        self.params = params_name_format(clf.best_params_, str_rem='estimator__')
+        self.models = sklearn.multioutput.MultiOutputRegressor(
+            sklearn.neighbors.KNeighborsRegressor(**self.params), n_jobs=-1
+        )
 
     def predict(self, x_test):
-        n_obs = x_test.shape[0]
-        coefs = np.empty((n_obs, self.max_basis))
-        neighbors = self.nn.kneighbors(x_test, self.k, False)
-        for ii in range(n_obs):
-            coefs[ii, :] = np.mean(self.z_basis[neighbors[ii], :], 0)
+        coefs = self.models.predict(x_test)
         return coefs
+
 
 class RandomForest(FlexCodeRegression):
     def __init__(self, max_basis, params):
@@ -54,22 +79,37 @@ class RandomForest(FlexCodeRegression):
             raise Exception("RandomForest requires sklearn to be installed")
 
         super(RandomForest, self).__init__(max_basis)
-        self.n_estimators = params.get("n_estimators", 10)
-        self.models = [sklearn.ensemble.RandomForestRegressor(self.n_estimators)
-                       for ii in range(self.max_basis)]
+
+        params_opt, opt_flag = params_dict_optim_decision(params, multi_output=True)
+        self.params = params_opt
+        self.models = None if opt_flag else sklearn.multioutput.MultiOutputRegressor(
+            sklearn.ensemble.RandomForestRegressor(**self.params), n_jobs=-1
+        )
 
     def fit(self, x_train, z_basis, weight=None):
-        if weight is not None:
-            raise Exception("Weights not implemented for RandomForest")
-        for ii in range(self.max_basis):
-            self.models[ii].fit(x_train, z_basis[:, ii])
+        if self.models is None:
+            self.cv_optim(x_train, z_basis, weight)
+
+        self.models.fit(x_train, z_basis, sample_weight=weight)
+
+    def cv_optim(self, x_train, z_basis, weight=None):
+        rf_obj = sklearn.multioutput.MultiOutputRegressor(
+            sklearn.ensemble.RandomForestRegressor(), n_jobs=-1
+        )
+        clf = sklearn.model_selection.GridSearchCV(
+            rf_obj, self.params, cv=5, scoring='neg_mean_squared_error', verbose=2
+        )
+        clf.fit(x_train, z_basis, sample_weight=weight)
+
+        self.params = params_name_format(clf.best_params_, str_rem='estimator__')
+        self.models = sklearn.multioutput.MultiOutputRegressor(
+            sklearn.ensemble.RandomForestRegressor(**self.params), n_jobs=-1
+        )
 
     def predict(self, x_test):
-        n_obs = x_test.shape[0]
-        coefs = np.empty((n_obs, self.max_basis))
-        for ii in range(self.max_basis):
-            coefs[:, ii] = self.models[ii].predict(x_test)
+        coefs = self.models.predict(x_test)
         return coefs
+
 
 class XGBoost(FlexCodeRegression):
     def __init__(self, max_basis, params):
@@ -77,23 +117,45 @@ class XGBoost(FlexCodeRegression):
             raise Exception("XGBoost requires xgboost to be installed")
         super(XGBoost, self).__init__(max_basis)
 
-        self.params = {'max_depth' : params.get("max_depth", 6),
-                       'eta' : params.get("eta", 0.3),
-                       'silent' : params.get("silent", 1),
-                       'objective' : params.get("objective", 'reg:linear')
-                      }
-        self.num_round = params.get("num_round", 500)
+        # Historically, people have used `eta` for `learning_rate` - taking that
+        # into account
+        if 'eta' in params:
+            params['learning_rate'] = params['eta']
+            del params['eta']
 
-    def fit(self, x_train, z_basis, weight):
-        self.models = []
-        for ii in range(self.max_basis):
-            dtrain = xgb.DMatrix(x_train, label=z_basis[:,ii], weight = weight)
-            self.models.append(xgb.train(self.params, dtrain, self.num_round))
+        # Also, set the default values if not passed
+        params['max_depth'] = params.get("max_depth", 6)
+        params['learning_rate'] = params.get("learning_rate", 0.3)
+        params['silent'] = params.get("silent", 1)
+        params['objective'] = params.get("objective", 'reg:linear')
+
+        params_opt, opt_flag = params_dict_optim_decision(params, multi_output=True)
+        self.params = params_opt
+        self.models = None if opt_flag else sklearn.multioutput.MultiOutputRegressor(
+            xgb.XGBRegressor(**self.params), n_jobs=-1
+        )
+
+    def fit(self, x_train, z_basis, weight=None):
+        if self.models is None:
+            self.cv_optim(x_train, z_basis, weight)
+
+        self.models.fit(x_train, z_basis, sample_weight=weight)
+
+    def cv_optim(self, x_train, z_basis, weight=None):
+        xgb_obj = sklearn.multioutput.MultiOutputRegressor(
+            xgb.XGBRegressor(), n_jobs=-1
+        )
+        clf = sklearn.model_selection.GridSearchCV(
+            xgb_obj, self.params, cv=5, scoring='neg_mean_squared_error', verbose=2
+        )
+        clf.fit(x_train, z_basis, sample_weight=weight)
+
+        self.params = params_name_format(clf.best_params_, str_rem='estimator__')
+        self.models = sklearn.multioutput.MultiOutputRegressor(
+            xgb.XGBRegressor(**self.params), n_jobs=-1
+        )
 
     def predict(self, x_test):
-        n_obs = x_test.shape[0]
-        coefs = np.empty((n_obs, self.max_basis))
-        dtest = xgb.DMatrix(x_test)
-        for ii in range(self.max_basis):
-            coefs[:, ii] = self.models[ii].predict(dtest)
+        coefs = self.models.predict(x_test)
         return coefs
+

@@ -12,7 +12,7 @@ setup(name = "flexcode",
       packages=["flexcode"],
       install_requires=["numpy", "pywavelets"],
       setup_requires=["pytest-runner"],
-      tests_require=["pytest", "sklearn"],
+      tests_require=["pytest", "sklearn", "xgboost"],
       zip_safe=True,
       extras_require={
           "xgboost" : ["xgboost"],
