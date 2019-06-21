@@ -15,7 +15,7 @@ def test_example():
 
   # Parameterize model
   model = flexcode.FlexCodeModel(NN, max_basis=31, basis_system="cosine",
-                                 regression_params={"k":20})
+                                 regression_params={"k": 20})
 
   # Fit and tune model
   model.fit(x_train, z_train)
