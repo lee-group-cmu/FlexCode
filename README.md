@@ -120,7 +120,7 @@ z_validation = z_data[perm[n_train:]]
 
 # Fit the model
 model = flexcode.FlexCodeModel(XGBoost, max_basis=40, basis_system='cosine',
-                               regression_params={"num_round":2000})
+                               regression_params={"max_depth": 8})
 model.fit(x_train, z_train)
 model.tune(x_validation, z_validation)
 
