@@ -175,7 +175,7 @@ def test_coef_predict_same_as_predict_lasso():
   coefs = model.predict_coefs(x_test)
   cdes_coefs = coefs.evaluate(z_grid)
 
-  assert np.max(np.abs(cdes_predict - cdes_coefs)) <= 0.1
+  assert np.max(np.abs(cdes_predict - cdes_coefs)) <= 0.5
 
 
 def test_coef_predict_same_as_predict_custom_class():
