@@ -4,3 +4,4 @@ build/*
 dist/*
 src/flexcode.egg-info/*
 .eggs/
+vignettes/.ipynb_checkpoints/
