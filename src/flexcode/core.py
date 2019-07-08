@@ -8,7 +8,8 @@ from .loss_functions import cde_loss
 
 class FlexCodeModel(object):
     def __init__(self, model, max_basis, basis_system="cosine",
-                 z_min=None, z_max=None, regression_params={}):
+                 z_min=None, z_max=None, regression_params={},
+                 custom_model=None):
         """Initialize FlexCodeModel object
 
         :param model: A FlexCodeRegression object
@@ -20,12 +21,13 @@ class FlexCodeModel(object):
         to the maximum of the training values
         :param regression_params: A dictionary of tuning parameters
         for the regression model
-
+        :param custom_model: a sklearn-type model, i.e. with fit and
+        predict method.
         """
         self.max_basis = max_basis
         self.best_basis = range(max_basis)
         self.basis_system = basis_system
-        self.model = model(max_basis, regression_params)
+        self.model = model(max_basis, regression_params, custom_model)
 
         self.z_min = z_min
         self.z_max = z_max
@@ -33,7 +35,7 @@ class FlexCodeModel(object):
         self.bump_threshold = None
         self.sharpen_alpha = None
 
-    def fit(self, x_train, z_train, weight = None):
+    def fit(self, x_train, z_train, weight=None):
         """Fits basis function regression models.
 
         :param x_train: a numpy matrix of training covariates.
@@ -58,8 +60,8 @@ class FlexCodeModel(object):
 
         self.model.fit(x_train, z_basis, weight)
 
-    def tune(self, x_validation, z_validation, bump_threshold_grid =
-             None, sharpen_grid = None, n_grid=1000):
+    def tune(self, x_validation, z_validation, bump_threshold_grid=None,
+             sharpen_grid=None, n_grid=1000):
         """Set tuning parameters to minimize CDE loss
 
         Sets best_basis, bump_delta, and sharpen_alpha values attributes
@@ -149,7 +151,7 @@ n        :param x_new: A numpy matrix of covariates at which to predict
         cdes /= self.z_max - self.z_min
         return cdes, make_grid(n_grid, self.z_min, self.z_max)
 
-    def estimate_error(self, x_test, z_test, n_grid = 1000):
+    def estimate_error(self, x_test, z_test, n_grid=1000):
         """Estimates CDE loss on test data
 
         :param x_test: A numpy matrix of covariates
