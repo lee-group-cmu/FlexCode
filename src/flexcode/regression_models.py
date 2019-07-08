@@ -12,6 +12,7 @@ try:
     import sklearn.neighbors
     import sklearn.multioutput
     import sklearn.model_selection
+    import sklearn.linear_model
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False
@@ -153,6 +154,52 @@ class XGBoost(FlexCodeRegression):
         self.params = params_name_format(clf.best_params_, str_rem='estimator__')
         self.models = sklearn.multioutput.MultiOutputRegressor(
             xgb.XGBRegressor(**self.params), n_jobs=-1
+        )
+
+    def predict(self, x_test):
+        coefs = self.models.predict(x_test)
+        return coefs
+
+
+class Lasso(FlexCodeRegression):
+    def __init__(self, max_basis, params):
+        if not SKLEARN_AVAILABLE:
+            raise Exception("Lasso requires sklearn to be installed")
+        super(Lasso, self).__init__(max_basis)
+
+        # Also, set the default values if not passed
+        params['alpha'] = params.get("alpha", 1.0)
+        params['l1_ratio'] = params.get("l1_ratio", 1.0)
+
+        params_opt, opt_flag = params_dict_optim_decision(params, multi_output=True)
+        self.params = params_opt
+        self.models = None if opt_flag else sklearn.multioutput.MultiOutputRegressor(
+            sklearn.linear_model.ElasticNet(**self.params), n_jobs=-1
+        )
+
+    def fit(self, x_train, z_basis, weight=None):
+
+        if weight is not None:
+            raise ValueError('Weights are not supported in the ElasticNet/Lasso '
+                             'implementation in sklearn.')
+
+        if self.models is None:
+            self.cv_optim(x_train, z_basis)
+
+        self.models.fit(x_train, z_basis)
+
+    def cv_optim(self, x_train, z_basis):
+        xgb_obj = sklearn.multioutput.MultiOutputRegressor(
+            sklearn.linear_model.ElasticNet(), n_jobs=-1
+        )
+        clf = sklearn.model_selection.GridSearchCV(
+            xgb_obj, self.params, cv=5, scoring='neg_mean_squared_error', verbose=2
+        )
+        clf.fit(x_train, z_basis)
+
+        self.params = params_name_format(clf.best_params_, str_rem='estimator__')
+        self.models = sklearn.multioutput.MultiOutputRegressor(
+            sklearn.linear_model.ElasticNet(**self.params), n_jobs=-1
         )
 
     def predict(self, x_test):
