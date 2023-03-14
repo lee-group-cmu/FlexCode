@@ -21,7 +21,7 @@ class FlexCodeModel(object):
         to the maximum of the training values
         :param regression_params: A dictionary of tuning parameters
         for the regression model
-        :param custom_model: a sklearn-type model, i.e. with fit and
+        :param custom_model: a scikit-learn-type model, i.e. with fit and
         predict method.
         """
         self.max_basis = max_basis
