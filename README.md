@@ -3,13 +3,13 @@ Implementation of Flexible Conditional Density Estimator (FlexCode) in Python. S
 
 # FlexCode
 
-FlexCode is a general-purpose method for converting any conditional mean point estimator of \(z\) to a conditional {\em density} estimator \(f(z \vert x)\), where \(x\) represents the covariates. The key idea is to expand the unknown function \(f(z \vert x)\) in an orthonormal basis \(\{\phi_i(z)\}_{i}\):
+FlexCode is a general-purpose method for converting any conditional mean point estimator of $z$ to a conditional density estimator $\(f(z \vert x)\)$, where $x$ represents the covariates. The key idea is to expand the unknown function $f(z \vert x)$ in an orthonormal basis $\{\phi_i(z)\}_{i}$:
 
-\[ f(z|x)=\sum_{i}\beta_{i }(x)\phi_i(z) \]
+$$f(z|x)=\sum_{i}\beta_{i }(x)\phi_i(z)$$ 
 
 By the orthogonality property, the expansion coefficients are just conditional means
 
-\[ \beta_{i }(x) = \mathbb{E}\left[\phi_i(z)|x\right] \equiv \int f(z|x) \phi_i(z) dz \]
+$$\beta_{i }(x) = \mathbb{E}\left[\phi_i(z)|x\right] \equiv \int f(z|x) \phi_i(z) dz$$
 
 where the coefficients are estimated from data by an appropriate regression method.
 
@@ -17,7 +17,7 @@ where the coefficients are estimated from data by an appropriate regression meth
 # Installation
 
 ```shell
-git clone https://github.com/tpospisi/FlexCode.git
+git clone https://github.com/lee-group-cmu/FlexCode.git
 pip install FlexCode[all]
 ```
 
