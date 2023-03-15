@@ -31,7 +31,7 @@ class FlexCodeRegression(object):
 class NN(FlexCodeRegression):
     def __init__(self, max_basis, params, *args, **kwargs):
         if not SKLEARN_AVAILABLE:
-            raise Exception("NN requires sklearn to be installed")
+            raise Exception("NN requires scikit-learn to be installed")
 
         super(NN, self).__init__(max_basis)
 
@@ -77,7 +77,7 @@ class NN(FlexCodeRegression):
 class RandomForest(FlexCodeRegression):
     def __init__(self, max_basis, params, *args, **kwargs):
         if not SKLEARN_AVAILABLE:
-            raise Exception("RandomForest requires sklearn to be installed")
+            raise Exception("RandomForest requires scikit-learn to be installed")
 
         super(RandomForest, self).__init__(max_basis)
 
@@ -164,7 +164,7 @@ class XGBoost(FlexCodeRegression):
 class Lasso(FlexCodeRegression):
     def __init__(self, max_basis, params, *args, **kwargs):
         if not SKLEARN_AVAILABLE:
-            raise Exception("Lasso requires sklearn to be installed")
+            raise Exception("Lasso requires scikit-learn to be installed")
         super(Lasso, self).__init__(max_basis)
 
         # Also, set the default values if not passed
@@ -181,7 +181,7 @@ class Lasso(FlexCodeRegression):
 
         if weight is not None:
             raise ValueError('Weights are not supported in the ElasticNet/Lasso '
-                             'implementation in sklearn.')
+                             'implementation in scikit-learn.')
 
         if self.models is None:
             self.cv_optim(x_train, z_basis)
@@ -210,7 +210,7 @@ class Lasso(FlexCodeRegression):
 class CustomModel(FlexCodeRegression):
     def __init__(self, max_basis, params, custom_model, *args, **kwargs):
         if not SKLEARN_AVAILABLE:
-            raise Exception("Custom class requires sklearn to be installed")
+            raise Exception("Custom class requires scikit-learn to be installed")
         super(CustomModel, self).__init__(max_basis)
 
         params_opt, opt_flag = params_dict_optim_decision(params, multi_output=True)

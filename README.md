@@ -24,7 +24,7 @@ pip install FlexCode[all]
 Flexcode handles a number of regression models; if you wish to avoid installing all dependencies you can specify your desired regression methods using the optional requires in brackets. Targets include
 
 -   xgboost
--   sklearn (for nearest neighbor regression, random forests)
+-   scikit-learn (for nearest neighbor regression, random forests)
 
 
 # A simple example
