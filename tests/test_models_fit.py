@@ -1,20 +1,29 @@
+"""This module tests a particular code path in the FlexCodeModel.fit function.
+Each of the test cases specifies a flexcode.FlexCodeModel that is parameterized
+with a `regression_params` variable that defines a dictionary with a single float
+or integer.
+
+For example, in `test_coef_predict_same_as_predict_nn`, the model is defined with
+the regression parameter `"k": 20`. The effect of this that within the 
+`NN.fit` method, the `self.models.fit` method will be called instead of `self.cv_optim`.
+
+This module is structurally similar to `test_cv_optim`, but tests a slightly
+different code path.
+"""
+
 import numpy as np
 import pytest
-import flexcode
 import xgboost as xgb
+
+from conftest import generate_data, BUMP_THRESHOLD_GRID, SHARPEN_GRID
+import flexcode
 from flexcode.regression_models import NN, RandomForest, XGBoost, Lasso, CustomModel
 
 @pytest.mark.skip(reason="The assertion is meaningless and the test is a duplicate")
 def test_example():
-    # Generate data p(z | x) = N(x, 1)
-    def generate_data(n_draws):
-        x = np.random.normal(0, 1, n_draws)
-        z = np.random.normal(x, 1, n_draws)
-        return x.reshape((len(x), 1)), z.reshape((len(z), 1))
-
-    x_train, z_train = generate_data(10000)
-    x_validation, z_validation = generate_data(10000)
-    x_test, z_test = generate_data(10000)
+    x_train, z_train = generate_data(1000)
+    x_validation, z_validation = generate_data(1000)
+    x_test, z_test = generate_data(1000)
 
     # Parameterize model
     model = flexcode.FlexCodeModel(NN, max_basis=31, basis_system="cosine",
@@ -23,8 +32,8 @@ def test_example():
     # Fit and tune model
     model.fit(x_train, z_train)
     model.tune(x_validation, z_validation,
-                bump_threshold_grid = np.linspace(0, 0.2, 3),
-                sharpen_grid = np.linspace(0.5, 1.5, 3))
+                bump_threshold_grid = BUMP_THRESHOLD_GRID,
+                sharpen_grid = SHARPEN_GRID)
 
     # Estimate CDE loss
     model.estimate_error(x_test, z_test)
@@ -35,15 +44,9 @@ def test_example():
 
 @pytest.mark.skip(reason="The assertion is meaningless and this test is a duplicate")
 def test_unshaped_example():
-    # Generate data p(z | x) = N(x, 1)
-    def generate_data(n_draws):
-        x = np.random.normal(0, 1, n_draws)
-        z = np.random.normal(x, 1, n_draws)
-        return x, z
-
-    x_train, z_train = generate_data(10000)
-    x_validation, z_validation = generate_data(10000)
-    x_test, z_test = generate_data(10000)
+    x_train, z_train = generate_data(1000)
+    x_validation, z_validation = generate_data(1000)
+    x_test, z_test = generate_data(1000)
 
     # Parameterize model
     model = flexcode.FlexCodeModel(NN, max_basis=31, basis_system="cosine",
@@ -52,8 +55,8 @@ def test_unshaped_example():
     # Fit and tune model
     model.fit(x_train, z_train)
     model.tune(x_validation, z_validation,
-                bump_threshold_grid = np.linspace(0, 0.2, 3),
-                sharpen_grid = np.linspace(0.5, 1.5, 3))
+                bump_threshold_grid = BUMP_THRESHOLD_GRID,
+                sharpen_grid = SHARPEN_GRID)
 
     # Estimate CDE loss
     model.estimate_error(x_test, z_test)
@@ -63,26 +66,20 @@ def test_unshaped_example():
     assert True
 
 
-def test_coef_predict_same_as_predict():
-    # Generate data p(z | x) = N(x, 1)
-    def generate_data(n_draws):
-        x = np.random.normal(0, 1, n_draws)
-        z = np.random.normal(x, 1, n_draws)
-        return x, z
-
-    x_train, z_train = generate_data(10000)
-    x_validation, z_validation = generate_data(10000)
-    x_test, z_test = generate_data(10000)
+def test_coef_predict_same_as_predict_nn():
+    x_train, z_train = generate_data(1000)
+    x_validation, z_validation = generate_data(1000)
+    x_test, _ = generate_data(1000)
 
     # Parameterize model
     model = flexcode.FlexCodeModel(NN, max_basis=31, basis_system="cosine",
-                                    regression_params={"k":20})
+                                    regression_params={"k": 20})
 
     # Fit and tune model
     model.fit(x_train, z_train)
     model.tune(x_validation, z_validation,
-                bump_threshold_grid = np.linspace(0, 0.2, 3),
-                sharpen_grid = np.linspace(0.5, 1.5, 3))
+                bump_threshold_grid = BUMP_THRESHOLD_GRID,
+                sharpen_grid = SHARPEN_GRID)
 
     cdes_predict, z_grid = model.predict(x_test, n_grid=200)
 
@@ -93,16 +90,9 @@ def test_coef_predict_same_as_predict():
 
 
 def test_coef_predict_same_as_predict_rf():
-
-    # Generate data p(z | x) = N(x, 1)
-    def generate_data(n_draws):
-        x = np.random.normal(0, 1, n_draws)
-        z = np.random.normal(x, 1, n_draws)
-        return x, z
-
-    x_train, z_train = generate_data(10000)
-    x_validation, z_validation = generate_data(10000)
-    x_test, z_test = generate_data(10000)
+    x_train, z_train = generate_data(1000)
+    x_validation, z_validation = generate_data(1000)
+    x_test, _ = generate_data(1000)
 
     # Parameterize model
     model = flexcode.FlexCodeModel(RandomForest, max_basis=31, basis_system="cosine",
@@ -111,8 +101,8 @@ def test_coef_predict_same_as_predict_rf():
     # Fit and tune model
     model.fit(x_train, z_train)
     model.tune(x_validation, z_validation,
-               bump_threshold_grid=np.linspace(0, 0.2, 3),
-               sharpen_grid=np.linspace(0.5, 1.5, 3))
+               bump_threshold_grid = BUMP_THRESHOLD_GRID,
+               sharpen_grid = SHARPEN_GRID)
 
     cdes_predict, z_grid = model.predict(x_test, n_grid=200)
 
@@ -122,15 +112,9 @@ def test_coef_predict_same_as_predict_rf():
     assert np.max(np.abs(cdes_predict - cdes_coefs)) <= 1e-4
 
 def test_coef_predict_same_as_predict_xgb():
-    # Generate data p(z | x) = N(x, 1)
-    def generate_data(n_draws):
-        x = np.random.normal(0, 1, n_draws)
-        z = np.random.normal(x, 1, n_draws)
-        return x, z
-
     x_train, z_train = generate_data(1000)
     x_validation, z_validation = generate_data(1000)
-    x_test, z_test = generate_data(1000)
+    x_test, _ = generate_data(1000)
 
     # Parameterize model
     model = flexcode.FlexCodeModel(XGBoost, max_basis=31, basis_system="cosine",
@@ -139,8 +123,8 @@ def test_coef_predict_same_as_predict_xgb():
     # Fit and tune model
     model.fit(x_train, z_train)
     model.tune(x_validation, z_validation,
-                bump_threshold_grid=np.linspace(0, 0.2, 3),
-                sharpen_grid=np.linspace(0.5, 1.5, 3))
+                bump_threshold_grid = BUMP_THRESHOLD_GRID,
+                sharpen_grid = SHARPEN_GRID)
 
     cdes_predict, z_grid = model.predict(x_test, n_grid=200)
 
@@ -151,15 +135,9 @@ def test_coef_predict_same_as_predict_xgb():
 
 
 def test_coef_predict_same_as_predict_lasso():
-    # Generate data p(z | x) = N(x, 1)
-    def generate_data(n_draws):
-        x = np.random.normal(0, 1, n_draws)
-        z = np.random.normal(x, 1, n_draws)
-        return x, z
-
-    x_train, z_train = generate_data(10000)
-    x_validation, z_validation = generate_data(10000)
-    x_test, z_test = generate_data(10000)
+    x_train, z_train = generate_data(1000)
+    x_validation, z_validation = generate_data(1000)
+    x_test, _ = generate_data(1000)
 
     # Parameterize model
     model = flexcode.FlexCodeModel(Lasso, max_basis=31, basis_system="cosine",
@@ -168,8 +146,8 @@ def test_coef_predict_same_as_predict_lasso():
     # Fit and tune model
     model.fit(x_train, z_train)
     model.tune(x_validation, z_validation,
-                bump_threshold_grid=np.linspace(0, 0.2, 3),
-                sharpen_grid=np.linspace(0.5, 1.5, 3))
+                bump_threshold_grid = BUMP_THRESHOLD_GRID,
+                sharpen_grid = SHARPEN_GRID)
 
     cdes_predict, z_grid = model.predict(x_test, n_grid=200)
 
@@ -179,16 +157,10 @@ def test_coef_predict_same_as_predict_lasso():
     assert np.max(np.abs(cdes_predict - cdes_coefs)) <= 0.5
 
 
-def test_coef_predict_same_as_predict_custom_class():
-    # Generate data p(z | x) = N(x, 1)
-    def generate_data(n_draws):
-        x = np.random.normal(0, 1, n_draws)
-        z = np.random.normal(x, 1, n_draws)
-        return x, z
-
-    x_train, z_train = generate_data(10000)
-    x_validation, z_validation = generate_data(10000)
-    x_test, z_test = generate_data(10000)
+def test_coef_predict_same_as_predict_custom_model():
+    x_train, z_train = generate_data(1000)
+    x_validation, z_validation = generate_data(1000)
+    x_test, _ = generate_data(1000)
 
     # Parameterize model
     custom_model = xgb.XGBRegressor
@@ -199,8 +171,8 @@ def test_coef_predict_same_as_predict_custom_class():
     # Fit and tune model
     model.fit(x_train, z_train)
     model.tune(x_validation, z_validation,
-                bump_threshold_grid=np.linspace(0, 0.2, 3),
-                sharpen_grid=np.linspace(0.5, 1.5, 3))
+                bump_threshold_grid = BUMP_THRESHOLD_GRID,
+                sharpen_grid = SHARPEN_GRID)
 
     cdes_predict, z_grid = model.predict(x_test, n_grid=200)
 
