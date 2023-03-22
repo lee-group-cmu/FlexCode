@@ -2,8 +2,10 @@
 
 import numpy as np
 import pywt
-from .post_processing import *
+
 from .helpers import box_transform, make_grid
+from .post_processing import *
+
 
 def evaluate_basis(responses, n_basis, basis_system):
     """Evaluates a system of basis functions.

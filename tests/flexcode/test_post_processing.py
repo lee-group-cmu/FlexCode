@@ -1,7 +1,9 @@
 import numpy as np
 import pytest
 from context import flexcode
+
 from flexcode.post_processing import *
+
 
 def test_remove_bumps():
     density = np.ones(100)

@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def box_transform(z, z_min, z_max):
     """Projects z from box [z_min, z_max] to [0, 1]
 

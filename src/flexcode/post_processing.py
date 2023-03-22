@@ -1,5 +1,7 @@
 import numpy as np
+
 from .loss_functions import cde_loss
+
 
 def normalize(cde_estimates, tol=1e-6, max_iter=200):
     """Normalizes conditional density estimates to be non-negative and

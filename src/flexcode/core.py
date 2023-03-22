@@ -1,9 +1,9 @@
 import numpy as np
 
+from .basis_functions import BasisCoefs, evaluate_basis
 from .helpers import box_transform, make_grid
-from .basis_functions import evaluate_basis, BasisCoefs
-from .post_processing import *
 from .loss_functions import cde_loss
+from .post_processing import *
 
 
 class FlexCodeModel(object):
