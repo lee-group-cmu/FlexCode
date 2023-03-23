@@ -1,6 +1,8 @@
-import pytest
 import numpy as np
+import pytest
+
 from flexcode.helpers import params_dict_optim_decision
+
 
 def test_params_transform():
 

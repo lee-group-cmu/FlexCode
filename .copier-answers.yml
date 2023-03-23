@@ -1,0 +1,15 @@
+# Changes here will be overwritten by Copier
+_commit: v1.3.0
+_src_path: gh:lincc-frameworks/python-project-template
+author_email: annlee@andrew.cmu.edu
+author_name: Ann Lee
+create_example_module: false
+custom_install: true
+include_notebooks: true
+module_name: flexcode
+mypy_type_checking: none
+preferred_linter: black
+project_license: none
+project_name: flexcode
+use_gitlfs: none
+use_isort: true

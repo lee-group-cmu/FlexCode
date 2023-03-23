@@ -1,4 +1,5 @@
 import numpy as np
+
 from .helpers import params_dict_optim_decision, params_name_format
 
 try:
@@ -9,10 +10,10 @@ except ImportError:
 
 try:
     import sklearn.ensemble
-    import sklearn.neighbors
-    import sklearn.multioutput
-    import sklearn.model_selection
     import sklearn.linear_model
+    import sklearn.model_selection
+    import sklearn.multioutput
+    import sklearn.neighbors
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False

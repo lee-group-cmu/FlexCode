@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def cde_loss(cde_estimates, z_grid, true_z):
     """Calculates conditional density estimation loss on holdout data
 
