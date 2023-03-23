@@ -5,6 +5,7 @@ import pytest
 BUMP_THRESHOLD_GRID = np.linspace(0, 0.2, 3)
 SHARPEN_GRID = np.linspace(0.5, 1.5, 3)
 
+
 def generate_data(n_draws):
     """Generate data p(z | x) = N(x, 1)
 

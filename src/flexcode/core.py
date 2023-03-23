@@ -7,9 +7,16 @@ from .post_processing import *
 
 
 class FlexCodeModel(object):
-    def __init__(self, model, max_basis, basis_system="cosine",
-                 z_min=None, z_max=None, regression_params={},
-                 custom_model=None):
+    def __init__(
+        self,
+        model,
+        max_basis,
+        basis_system="cosine",
+        z_min=None,
+        z_max=None,
+        regression_params={},
+        custom_model=None,
+    ):
         """Initialize FlexCodeModel object
 
         :param model: A FlexCodeRegression object
@@ -55,13 +62,13 @@ class FlexCodeModel(object):
         if self.z_max is None:
             self.z_max = max(z_train)
 
-        z_basis = evaluate_basis(box_transform(z_train, self.z_min, self.z_max),
-                                 self.max_basis, self.basis_system)
+        z_basis = evaluate_basis(
+            box_transform(z_train, self.z_min, self.z_max), self.max_basis, self.basis_system
+        )
 
         self.model.fit(x_train, z_basis, weight)
 
-    def tune(self, x_validation, z_validation, bump_threshold_grid=None,
-             sharpen_grid=None, n_grid=1000):
+    def tune(self, x_validation, z_validation, bump_threshold_grid=None, sharpen_grid=None, n_grid=1000):
         """Set tuning parameters to minimize CDE loss
 
         Sets best_basis, bump_delta, and sharpen_alpha values attributes
@@ -85,7 +92,7 @@ class FlexCodeModel(object):
 
         coefs = self.model.predict(x_validation)
 
-        term1 = np.mean(coefs ** 2, 0)
+        term1 = np.mean(coefs**2, 0)
         term2 = np.mean(coefs * z_basis, 0)
         # losses = np.cumsum(term1 - 2 * term2)
         self.best_basis = np.where(term1 - 2 * term2 < 0.0)[0]
@@ -93,38 +100,35 @@ class FlexCodeModel(object):
         if bump_threshold_grid is not None or sharpen_grid is not None:
             coefs = coefs[:, self.best_basis]
             z_grid = make_grid(n_grid, self.z_min, self.z_max)
-            z_basis = evaluate_basis(box_transform(z_grid, self.z_min, self.z_max),
-                                     max(self.best_basis) + 1, self.basis_system)
+            z_basis = evaluate_basis(
+                box_transform(z_grid, self.z_min, self.z_max), max(self.best_basis) + 1, self.basis_system
+            )
             z_basis = z_basis[:, self.best_basis]
             cdes = np.matmul(coefs, z_basis.T)
             normalize(cdes)
 
             if bump_threshold_grid is not None:
-                self.bump_threshold = choose_bump_threshold(cdes, z_grid,
-                                                            z_validation,
-                                                            bump_threshold_grid)
+                self.bump_threshold = choose_bump_threshold(cdes, z_grid, z_validation, bump_threshold_grid)
 
                 remove_bumps(cdes, self.bump_threshold)
                 normalize(cdes)
 
             if sharpen_grid is not None:
-                self.sharpen_alpha = choose_sharpen(cdes, z_grid, z_validation,
-                                                    sharpen_grid)
-
-
+                self.sharpen_alpha = choose_sharpen(cdes, z_grid, z_validation, sharpen_grid)
 
     def predict_coefs(self, x_new):
         if len(x_new.shape) == 1:
             x_new = x_new.reshape(-1, 1)
 
         coefs = self.model.predict(x_new)[:, self.best_basis]
-        return BasisCoefs(coefs, self.basis_system, self.z_min,
-                          self.z_max, self.bump_threshold, self.sharpen_alpha)
+        return BasisCoefs(
+            coefs, self.basis_system, self.z_min, self.z_max, self.bump_threshold, self.sharpen_alpha
+        )
 
     def predict(self, x_new, n_grid):
         """Predict conditional density estimates on new data
 
-n        :param x_new: A numpy matrix of covariates at which to predict
+        :param x_new: A numpy matrix of covariates at which to predict
         :param n_grid: int, the number of grid points at which to
         predict the conditional density
         :returns: A numpy matrix where each row is a conditional
@@ -136,8 +140,7 @@ n        :param x_new: A numpy matrix of covariates at which to predict
             x_new = x_new.reshape(-1, 1)
 
         z_grid = make_grid(n_grid, 0.0, 1.0)
-        z_basis = evaluate_basis(z_grid, max(self.best_basis) + 1,
-                                 self.basis_system)
+        z_basis = evaluate_basis(z_grid, max(self.best_basis) + 1, self.basis_system)
         z_basis = z_basis[:, self.best_basis]
         coefs = self.model.predict(x_new)[:, self.best_basis]
         cdes = np.matmul(coefs, z_basis.T)

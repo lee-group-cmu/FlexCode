@@ -31,21 +31,20 @@ def evaluate_basis(responses, n_basis, basis_system):
         If the basis system isn't recognized.
 
     """
-    systems = {'cosine' : cosine_basis,
-               'Fourier' : fourier_basis,
-               'db4' : wavelet_basis}
+    systems = {"cosine": cosine_basis, "Fourier": fourier_basis, "db4": wavelet_basis}
     try:
         basis_fn = systems[basis_system]
     except KeyError:
         raise ValueError("Basis system {} not recognized".format(basis_system))
 
     n_dim = responses.shape[1]
-    if n_dim  == 1:
+    if n_dim == 1:
         return basis_fn(responses, n_basis)
     else:
         if len(n_basis) == 1:
             n_basis = [n_basis] * n_dim
         return tensor_basis(responses, n_basis, basis_fn)
+
 
 def tensor_basis(responses, n_basis, basis_fn):
     """Evaluates tensor basis.
@@ -118,6 +117,7 @@ def cosine_basis(responses, n_basis):
         basis[:, col] = np.sqrt(2) * np.cos(np.pi * col * responses)
     return basis
 
+
 def fourier_basis(responses, n_basis):
     """Evaluates Fourier basis.
 
@@ -149,7 +149,8 @@ def fourier_basis(responses, n_basis):
             basis[:, -1] = np.sqrt(2) * np.sin(np.pi * n_basis * responses)
     return basis
 
-def wavelet_basis(responses, n_basis, family='db4'):
+
+def wavelet_basis(responses, n_basis, family="db4"):
     """Evaluates Daubechies basis.
 
     Arguments
@@ -179,6 +180,7 @@ def wavelet_basis(responses, n_basis, family='db4'):
         _, wavelet, x_grid = rez
     wavelet *= np.sqrt(max(x_grid) - min(x_grid))
     x_grid = (x_grid - min(x_grid)) / (max(x_grid) - min(x_grid))
+
     def _wave_fun(val):
         if val < 0 or val > 1:
             return 0.0
@@ -191,16 +193,16 @@ def wavelet_basis(responses, n_basis, family='db4'):
     loc = 0
     level = 0
     for col in range(1, n_basis):
-        basis[:, col] = [2 ** (level / 2) * _wave_fun(a * 2 ** level - loc) for a in responses]
+        basis[:, col] = [2 ** (level / 2) * _wave_fun(a * 2**level - loc) for a in responses]
         loc += 1
-        if loc == 2 ** level:
+        if loc == 2**level:
             loc = 0
             level += 1
     return basis
 
+
 class BasisCoefs(object):
-    def __init__(self, coefs, basis_system, z_min, z_max, bump_threshold=None,
-                 sharpen_alpha=None):
+    def __init__(self, coefs, basis_system, z_min, z_max, bump_threshold=None, sharpen_alpha=None):
         self.coefs = coefs
         self.basis_system = basis_system
         self.z_min = z_min
@@ -209,8 +211,9 @@ class BasisCoefs(object):
         self.sharpen_alpha = sharpen_alpha
 
     def evaluate(self, z_grid):
-        basis = evaluate_basis(box_transform(z_grid, self.z_min, self.z_max),
-                               self.coefs.shape[1], self.basis_system)
+        basis = evaluate_basis(
+            box_transform(z_grid, self.z_min, self.z_max), self.coefs.shape[1], self.basis_system
+        )
         cdes = np.matmul(self.coefs, basis.T)
 
         normalize(cdes)

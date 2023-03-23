@@ -22,6 +22,7 @@ def test_remove_bumps():
 
     np.testing.assert_array_equal(density, target_density)
 
+
 def test_normalize():
     n_grid = 1000
 
