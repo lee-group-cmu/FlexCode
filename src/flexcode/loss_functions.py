@@ -15,7 +15,7 @@ def cde_loss(cde_estimates, z_grid, true_z):
 
     n_obs, n_grid = cde_estimates.shape
 
-    term1 = np.mean(np.trapz(cde_estimates ** 2, z_grid.flatten()))
+    term1 = np.mean(np.trapz(cde_estimates**2, z_grid.flatten()))
 
     nns = [np.argmin(np.abs(z_grid - true_z[ii])) for ii in range(n_obs)]
     term2 = np.mean(cde_estimates[range(n_obs), nns])

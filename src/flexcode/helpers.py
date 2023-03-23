@@ -13,6 +13,7 @@ def box_transform(z, z_min, z_max):
 
     return (z - z_min) / (z_max - z_min)
 
+
 def make_grid(n_grid, z_min, z_max):
     """Create grid of equally spaced points
 
@@ -24,8 +25,9 @@ def make_grid(n_grid, z_min, z_max):
     """
     return np.linspace(z_min, z_max, n_grid).reshape((n_grid, 1))
 
+
 def params_dict_optim_decision(params, multi_output=False):
-    '''
+    """
     Ingest parameter dictionary and determines whether to do CV optimization.
     If one of the parameter has a list of length above 1 as values
     then automatically format the dictionary for GridSearchCV.
@@ -36,14 +38,16 @@ def params_dict_optim_decision(params, multi_output=False):
     :returns: a dictionary of parameters and a boolean flag of whether CV-opt
         is going to be performed. If CV-optimization is set to happen then
         the paramater dictionary is correctly format.
-    '''
+    """
 
     # Determines whether there are any list in the items of the dictionary
     opt_flag = False
     for k, value in params.items():
         if type(value) == tuple:
-            raise ValueError("Parameter values need to be lists or np.array, not tuple."
-                             "Current issues with parameter %s" % (k))
+            raise ValueError(
+                "Parameter values need to be lists or np.array, not tuple."
+                "Current issues with parameter %s" % (k)
+            )
         if type(value) == list or type(value) == np.ndarray:
             opt_flag = True
             break
@@ -55,14 +59,14 @@ def params_dict_optim_decision(params, multi_output=False):
         for k, value in params.items():
             out_value = value.tolist() if type(value) == np.ndarray else value
             out_value = [out_value] if type(out_value) != list else out_value
-            out_key = 'estimator__' + k if multi_output else k
+            out_key = "estimator__" + k if multi_output else k
             out_param_dict[out_key] = out_value
 
     return out_param_dict, opt_flag
 
 
 def params_name_format(params, str_rem):
-    '''
+    """
     Changes all the key in dictionaries to remove a specific word from each key (``estimator__``).
     This is because in order to GridsearchCV on MultiOutputRegressor one needs to
     use ``estimator__`` in all parameters - but once the best parameters are fetched
@@ -71,9 +75,9 @@ def params_name_format(params, str_rem):
     :param params: dictionary of model parameters
     :param str_rem: word to be removed
     :returns: dictionary of parameters in which the word has been removed in keys
-    '''
+    """
     out_dict = {}
     for k, v in params.items():
-        new_key = k.replace(str_rem, '') if str_rem in k else k
+        new_key = k.replace(str_rem, "") if str_rem in k else k
         out_dict[new_key] = v
     return out_dict

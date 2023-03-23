@@ -19,8 +19,8 @@ def normalize(cde_estimates, tol=1e-6, max_iter=200):
     if cde_estimates.ndim == 1:
         _normalize(cde_estimates, tol, max_iter)
     else:
-        np.apply_along_axis(_normalize, 1, cde_estimates, tol=tol,
-                            max_iter=max_iter)
+        np.apply_along_axis(_normalize, 1, cde_estimates, tol=tol, max_iter=max_iter)
+
 
 def _normalize(density, tol=1e-6, max_iter=500):
     """Normalizes a density estimate to be non-negative and integrate to
@@ -62,6 +62,7 @@ def _normalize(density, tol=1e-6, max_iter=500):
     density -= mid
     density[density < 0.0] = 0.0
 
+
 def sharpen(cde_estimates, alpha):
     """Sharpens conditional density estimates.
 
@@ -75,6 +76,7 @@ def sharpen(cde_estimates, alpha):
     """
     cde_estimates **= alpha
     normalize(cde_estimates)
+
 
 def choose_sharpen(cde_estimates, z_grid, true_z, alpha_grid):
     """Chooses the sharpen parameter by minimizing cde loss.
@@ -97,6 +99,7 @@ def choose_sharpen(cde_estimates, z_grid, true_z, alpha_grid):
             best_alpha = alpha
     return best_alpha
 
+
 def remove_bumps(cde_estimates, delta):
     """Removes bumps in conditional density estimates
 
@@ -111,7 +114,8 @@ def remove_bumps(cde_estimates, delta):
     if cde_estimates.ndim == 1:
         _remove_bumps(cde_estimates, delta)
     else:
-        np.apply_along_axis(_remove_bumps, 1, cde_estimates, delta = delta)
+        np.apply_along_axis(_remove_bumps, 1, cde_estimates, delta=delta)
+
 
 def _remove_bumps(density, delta):
     """Removes bumps in conditional density estimates.
@@ -131,16 +135,17 @@ def _remove_bumps(density, delta):
     for right_idx, val in enumerate(density):
         if val <= 0.0:
             if area < delta:
-                density[left_idx:(right_idx + 1)] = 0.0
+                density[left_idx : (right_idx + 1)] = 0.0
                 removed_area += area
             left_idx = right_idx + 1
             area = 0.0
         else:
             area += val * bin_size
-    if area < delta: # final check at end
+    if area < delta:  # final check at end
         density[left_idx:] = 0.0
         removed_area += area
     _normalize(density)
+
 
 def choose_bump_threshold(cde_estimates, z_grid, true_z, delta_grid):
     """Chooses the bump threshold which minimizes cde loss.
