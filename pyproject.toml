@@ -18,7 +18,7 @@ dependencies = [
     "ipykernel", # Support for Jupyter notebooks
     "pywavelets",
     "scikit-learn>=0.18",
-    "xgboost==0.82"
+    "xgboost"
 ]
 
 # On a mac, install optional dependencies with `pip install '.[dev]'` (include the single quotes)
@@ -30,7 +30,7 @@ dev = [
     "sphinx==6.1.3", # Used to automatically generate documentation
     "sphinx_rtd_theme==1.2.0", # Used to render documentation
     "sphinx-autoapi==2.0.1", # Used to automatically generate api documentation
-    "pylint", # Used for static linting of files
+    "black", # Used for static linting of files
     "nbconvert", # Needed for pre-commit check to clear output from Python notebooks
     "nbsphinx", # Used to itegrate Python notebooks into Sphinx documentation
     "ipython", # Also used in building notebooks into Sphinx
@@ -48,3 +48,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 write_to = "src/flexcode/_version.py"
+
+[tool.black]
+line-length = 110

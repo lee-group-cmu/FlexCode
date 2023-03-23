@@ -8,7 +8,7 @@ custom_install: true
 include_notebooks: true
 module_name: flexcode
 mypy_type_checking: none
-preferred_linter: pylint
+preferred_linter: black
 project_license: none
 project_name: flexcode
 use_gitlfs: none
